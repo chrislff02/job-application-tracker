@@ -1,0 +1,66 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum ApplicationStatus {
+  SAVED
+  APPLIED
+  ASSESSMENT
+  PHONE_SCREEN
+  INTERVIEW
+  FINAL_INTERVIEW
+  OFFER
+  REJECTED
+  WITHDRAWN
+}
+
+model User {
+  id           Int           @id @default(autoincrement())
+  name         String
+  email        String        @unique
+  passwordHash String
+  applications Application[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Application {
+  id             Int               @id @default(autoincrement())
+  userId         Int
+  company        String
+  position       String
+  status         ApplicationStatus @default(SAVED)
+  appliedDate    DateTime?
+  location       String?
+  salary         String?
+  source         String?
+  jobUrl         String?
+  notes          String?
+  recruiterName  String?
+  recruiterEmail String?
+
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  interviews     Interview[]
+
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+}
+
+model Interview {
+  id            Int         @id @default(autoincrement())
+  applicationId Int
+  type          String
+  dateTime      DateTime
+  interviewer   String?
+  notes         String?
+
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
