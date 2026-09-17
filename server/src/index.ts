@@ -5,6 +5,7 @@ import authRoutes from "./routes/auth";
 import { authenticateToken, AuthRequest } from "./middleware/auth";
 import applicationRoutes from "./routes/applications";
 import dashboardRoutes from "./routes/dashboard";
+import interviewRoutes from "./routes/interviews";
 
 dotenv.config();
 
@@ -18,6 +19,7 @@ app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/applications", applicationRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api", interviewRoutes);
 
 app.get("/api/health", (req, res) => {
   res.json({
