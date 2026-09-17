@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "../api/api";
+import "./Dashboard.css";
 
 interface DashboardStats {
   totalApplications: number;
@@ -11,6 +13,8 @@ interface DashboardStats {
 }
 
 function Dashboard() {
+  const navigate = useNavigate();
+
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -30,6 +34,11 @@ function Dashboard() {
     fetchStats();
   }, []);
 
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    navigate("/login");
+  };
+
   if (loading) {
     return <p>Loading dashboard...</p>;
   }
@@ -43,17 +52,54 @@ function Dashboard() {
   }
 
   return (
-    <div>
-      <h1>Dashboard</h1>
+    <div className="dashboard-page">
+      <header className="dashboard-header">
+        <div>
+          <h1>Job Application Tracker</h1>
+          <p>Dashboard</p>
+        </div>
 
-      <div>
-        <p>Total Applications: {stats.totalApplications}</p>
-        <p>Applications This Week: {stats.applicationsThisWeek}</p>
-        <p>Interviews: {stats.interviews}</p>
-        <p>Offers: {stats.offers}</p>
-        <p>Response Rate: {stats.responseRate}%</p>
-        <p>Interview Conversion Rate: {stats.interviewConversionRate}%</p>
-      </div>
+        <button onClick={handleLogout}>Logout</button>
+      </header>
+
+      <main className="dashboard-content">
+        <div className="dashboard-title">
+          <h2>Overview</h2>
+          <p>Track your job search progress.</p>
+        </div>
+
+        <section className="stats-grid">
+          <div className="stat-card">
+            <span>Total Applications</span>
+            <strong>{stats.totalApplications}</strong>
+          </div>
+
+          <div className="stat-card">
+            <span>Applications This Week</span>
+            <strong>{stats.applicationsThisWeek}</strong>
+          </div>
+
+          <div className="stat-card">
+            <span>Interviews</span>
+            <strong>{stats.interviews}</strong>
+          </div>
+
+          <div className="stat-card">
+            <span>Offers</span>
+            <strong>{stats.offers}</strong>
+          </div>
+
+          <div className="stat-card">
+            <span>Response Rate</span>
+            <strong>{stats.responseRate}%</strong>
+          </div>
+
+          <div className="stat-card">
+            <span>Interview Conversion Rate</span>
+            <strong>{stats.interviewConversionRate}%</strong>
+          </div>
+        </section>
+      </main>
     </div>
   );
 }

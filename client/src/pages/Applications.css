@@ -1,0 +1,196 @@
+.applications-page {
+  min-height: 100vh;
+  background: #111827;
+  color: #f9fafb;
+  padding: 40px;
+}
+
+.applications-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.applications-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 28px;
+}
+
+.applications-header h1 {
+  margin: 0;
+  font-size: 2rem;
+}
+
+.add-application-button {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  background: #2563eb;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.add-application-button:hover {
+  background: #1d4ed8;
+}
+
+.add-application-form {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+  padding: 20px;
+  border: 1px solid #374151;
+  border-radius: 12px;
+  background: #1f2937;
+}
+
+.add-application-form input,
+.add-application-form select {
+  padding: 10px 12px;
+  border: 1px solid #374151;
+  border-radius: 8px;
+  background: #111827;
+  color: #f9fafb;
+}
+
+.form-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 10px;
+}
+
+.form-actions button {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.form-actions button:first-child {
+  background: #2563eb;
+  color: white;
+}
+
+.form-actions button:last-child {
+  background: #374151;
+  color: white;
+}
+
+.application-controls {
+  display: grid;
+  grid-template-columns: 2fr repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.application-controls input,
+.application-controls select {
+  padding: 10px 12px;
+  border: 1px solid #374151;
+  border-radius: 8px;
+  background: #1f2937;
+  color: #f9fafb;
+}
+
+.applications-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid #374151;
+  border-radius: 12px;
+}
+
+.applications-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #1f2937;
+}
+
+.applications-table th,
+.applications-table td {
+  padding: 14px 16px;
+  text-align: left;
+  border-bottom: 1px solid #374151;
+}
+
+.applications-table th {
+  color: #9ca3af;
+  font-size: 0.9rem;
+}
+
+.applications-table tbody tr:hover {
+  background: #273449;
+}
+
+.applications-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #374151;
+  font-size: 0.8rem;
+}
+
+.empty-state {
+  padding: 24px;
+  text-align: center;
+  color: #9ca3af;
+}
+
+@media (max-width: 900px) {
+  .application-controls {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .add-application-form {
+    grid-template-columns: 1fr;
+  }
+
+  .form-actions {
+    grid-column: 1;
+  }
+}
+
+@media (max-width: 600px) {
+  .applications-page {
+    padding: 20px;
+  }
+
+  .applications-header {
+    align-items: flex-start;
+    gap: 16px;
+    flex-direction: column;
+  }
+
+  .application-controls {
+    grid-template-columns: 1fr;
+  }
+}
+
+.table-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.table-actions button {
+  padding: 7px 10px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.table-actions button:first-child {
+  background: #2563eb;
+  color: white;
+}
+
+.table-actions button:last-child {
+  background: #dc2626;
+  color: white;
+}

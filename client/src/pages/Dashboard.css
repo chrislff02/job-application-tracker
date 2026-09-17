@@ -1,0 +1,97 @@
+.dashboard-page {
+  min-height: 100vh;
+  background: #111827;
+  color: #f9fafb;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 40px;
+  border-bottom: 1px solid #374151;
+  background: #1f2937;
+}
+
+.dashboard-header h1 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.dashboard-header p {
+  margin: 4px 0 0;
+  color: #9ca3af;
+}
+
+.dashboard-header button {
+  padding: 10px 18px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  background: #ef4444;
+  color: white;
+  font-weight: 600;
+}
+
+.dashboard-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px;
+}
+
+.dashboard-title {
+  margin-bottom: 30px;
+}
+
+.dashboard-title h2 {
+  margin-bottom: 6px;
+  font-size: 2rem;
+}
+
+.dashboard-title p {
+  margin: 0;
+  color: #9ca3af;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.stat-card {
+  padding: 24px;
+  border: 1px solid #374151;
+  border-radius: 12px;
+  background: #1f2937;
+}
+
+.stat-card span {
+  display: block;
+  margin-bottom: 12px;
+  color: #9ca3af;
+}
+
+.stat-card strong {
+  font-size: 2rem;
+}
+
+@media (max-width: 900px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .dashboard-header {
+    padding: 16px 20px;
+  }
+
+  .dashboard-content {
+    padding: 24px 20px;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+}
