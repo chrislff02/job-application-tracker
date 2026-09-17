@@ -92,12 +92,91 @@ router.get(
         });
       }
 
+      const {
+        search,
+        status,
+        source,
+        sort = "createdAt",
+        order = "desc",
+      } = req.query;
+
+      const sortField =
+        sort === "company" ||
+        sort === "position" ||
+        sort === "appliedDate" ||
+        sort === "createdAt" ||
+        sort === "updatedAt"
+          ? sort
+          : "createdAt";
+
+      const sortOrder = order === "asc" ? "asc" : "desc";
+
+      if (
+        status &&
+        typeof status === "string" &&
+        !validStatuses.includes(status as ApplicationStatus)
+      ) {
+        return res.status(400).json({
+          message: "Invalid application status",
+        });
+      }
+
       const applications = await prisma.application.findMany({
         where: {
           userId,
+
+          ...(status &&
+          typeof status === "string"
+            ? {
+                status: status as ApplicationStatus,
+              }
+            : {}),
+
+          ...(source &&
+          typeof source === "string"
+            ? {
+                source: {
+                  equals: source,
+                  mode: "insensitive",
+                },
+              }
+            : {}),
+
+          ...(search &&
+          typeof search === "string"
+            ? {
+                OR: [
+                  {
+                    company: {
+                      contains: search,
+                      mode: "insensitive",
+                    },
+                  },
+                  {
+                    position: {
+                      contains: search,
+                      mode: "insensitive",
+                    },
+                  },
+                  {
+                    location: {
+                      contains: search,
+                      mode: "insensitive",
+                    },
+                  },
+                  {
+                    source: {
+                      contains: search,
+                      mode: "insensitive",
+                    },
+                  },
+                ],
+              }
+            : {}),
         },
+
         orderBy: {
-          createdAt: "desc",
+          [sortField]: sortOrder,
         },
       });
 
@@ -295,6 +374,70 @@ router.delete(
 
       return res.json({
         message: "Application deleted successfully",
+      });
+    } catch (error) {
+      console.error(error);
+
+      return res.status(500).json({
+        message: "Something went wrong",
+      });
+    }
+  }
+);
+
+// UPDATE APPLICATION STATUS
+router.patch(
+  "/:id/status",
+  authenticateToken,
+  async (req: AuthRequest, res) => {
+    try {
+      const userId = req.user?.userId;
+      const applicationId = Number(req.params.id);
+      const { status } = req.body;
+
+      if (!userId) {
+        return res.status(401).json({
+          message: "Unauthorized",
+        });
+      }
+
+      if (Number.isNaN(applicationId)) {
+        return res.status(400).json({
+          message: "Invalid application id",
+        });
+      }
+
+      if (!status || !validStatuses.includes(status)) {
+        return res.status(400).json({
+          message: "Invalid application status",
+        });
+      }
+
+      const existingApplication = await prisma.application.findFirst({
+        where: {
+          id: applicationId,
+          userId,
+        },
+      });
+
+      if (!existingApplication) {
+        return res.status(404).json({
+          message: "Application not found",
+        });
+      }
+
+      const application = await prisma.application.update({
+        where: {
+          id: applicationId,
+        },
+        data: {
+          status,
+        },
+      });
+
+      return res.json({
+        message: "Application status updated successfully",
+        application,
       });
     } catch (error) {
       console.error(error);
