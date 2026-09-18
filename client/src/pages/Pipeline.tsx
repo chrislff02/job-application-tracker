@@ -119,8 +119,6 @@ function Pipeline() {
             <h1>Pipeline</h1>
             <p>Track applications through each stage.</p>
           </div>
-
-          <Link to="/applications">Back to Applications</Link>
         </div>
 
         <div className="pipeline-board">

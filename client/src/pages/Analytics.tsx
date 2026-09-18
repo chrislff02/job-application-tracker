@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+
 import {
   Bar,
   BarChart,
@@ -90,8 +90,6 @@ function Analytics() {
             <h1>Analytics</h1>
             <p>Understand your job search performance.</p>
           </div>
-
-          <Link to="/dashboard">Back to Dashboard</Link>
         </div>
 
         <div className="analytics-stats">

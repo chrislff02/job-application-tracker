@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import api from "../api/api";
 import "./Dashboard.css";
 
@@ -13,8 +12,6 @@ interface DashboardStats {
 }
 
 function Dashboard() {
-  const navigate = useNavigate();
-
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -22,6 +19,8 @@ function Dashboard() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
+        setError("");
+
         const response = await api.get("/dashboard/stats");
         setStats(response.data);
       } catch {
@@ -33,11 +32,6 @@ function Dashboard() {
 
     fetchStats();
   }, []);
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    navigate("/login");
-  };
 
   if (loading) {
     return <p>Loading dashboard...</p>;
@@ -53,15 +47,6 @@ function Dashboard() {
 
   return (
     <div className="dashboard-page">
-      <header className="dashboard-header">
-        <div>
-          <h1>Job Application Tracker</h1>
-          <p>Dashboard</p>
-        </div>
-
-        <button onClick={handleLogout}>Logout</button>
-      </header>
-
       <main className="dashboard-content">
         <div className="dashboard-title">
           <h2>Overview</h2>
