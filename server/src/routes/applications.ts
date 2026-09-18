@@ -8,277 +8,296 @@ const router = Router();
 const validStatuses = Object.values(ApplicationStatus);
 
 // CREATE APPLICATION
-router.post(
-  "/",
-  authenticateToken,
-  async (req: AuthRequest, res) => {
-    try {
-      const userId = req.user?.userId;
+router.post("/", authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.user?.userId;
 
-      if (!userId) {
-        return res.status(401).json({
-          message: "Unauthorized",
-        });
-      }
-
-      const {
-        company,
-        position,
-        status,
-        appliedDate,
-        location,
-        salary,
-        source,
-        jobUrl,
-        notes,
-        recruiterName,
-        recruiterEmail,
-      } = req.body;
-
-      if (!company || !position) {
-        return res.status(400).json({
-          message: "Company and position are required",
-        });
-      }
-
-      if (status && !validStatuses.includes(status)) {
-        return res.status(400).json({
-          message: "Invalid application status",
-        });
-      }
-
-      const application = await prisma.application.create({
-        data: {
-          userId,
-          company,
-          position,
-          status: status ?? ApplicationStatus.SAVED,
-          appliedDate: appliedDate ? new Date(appliedDate) : null,
-          location: location || null,
-          salary: salary || null,
-          source: source || null,
-          jobUrl: jobUrl || null,
-          notes: notes || null,
-          recruiterName: recruiterName || null,
-          recruiterEmail: recruiterEmail || null,
-        },
-      });
-
-      return res.status(201).json({
-        message: "Application created successfully",
-        application,
-      });
-    } catch (error) {
-      console.error(error);
-
-      return res.status(500).json({
-        message: "Something went wrong",
+    if (!userId) {
+      return res.status(401).json({
+        message: "Unauthorized",
       });
     }
+
+    const {
+      company,
+      position,
+      status,
+      appliedDate,
+      location,
+      salary,
+      source,
+      jobUrl,
+      notes,
+      recruiterName,
+      recruiterEmail,
+    } = req.body;
+
+    if (!company || !position) {
+      return res.status(400).json({
+        message: "Company and position are required",
+      });
+    }
+
+    if (status && !validStatuses.includes(status)) {
+      return res.status(400).json({
+        message: "Invalid application status",
+      });
+    }
+
+    const application = await prisma.application.create({
+      data: {
+        userId,
+        company,
+        position,
+        status: status ?? ApplicationStatus.SAVED,
+        appliedDate: appliedDate ? new Date(appliedDate) : null,
+        location: location || null,
+        salary: salary || null,
+        source: source || null,
+        jobUrl: jobUrl || null,
+        notes: notes || null,
+        recruiterName: recruiterName || null,
+        recruiterEmail: recruiterEmail || null,
+      },
+    });
+
+    await prisma.applicationActivity.create({
+      data: {
+        applicationId: application.id,
+        type: "APPLICATION_CREATED",
+        description: `Application created for ${application.company} - ${application.position}`,
+      },
+    });
+
+    return res.status(201).json({
+      message: "Application created successfully",
+      application,
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      message: "Something went wrong",
+    });
   }
-);
+});
 
 // GET ALL APPLICATIONS FOR LOGGED-IN USER
-router.get(
-  "/",
-  authenticateToken,
-  async (req: AuthRequest, res) => {
-    try {
-      const userId = req.user?.userId;
+router.get("/", authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.user?.userId;
 
-      if (!userId) {
-        return res.status(401).json({
-          message: "Unauthorized",
-        });
-      }
-
-      const {
-        search,
-        status,
-        source,
-        sort = "createdAt",
-        order = "desc",
-      } = req.query;
-
-      const sortField =
-        sort === "company" ||
-        sort === "position" ||
-        sort === "appliedDate" ||
-        sort === "createdAt" ||
-        sort === "updatedAt"
-          ? sort
-          : "createdAt";
-
-      const sortOrder = order === "asc" ? "asc" : "desc";
-
-      if (
-        status &&
-        typeof status === "string" &&
-        !validStatuses.includes(status as ApplicationStatus)
-      ) {
-        return res.status(400).json({
-          message: "Invalid application status",
-        });
-      }
-
-      const applications = await prisma.application.findMany({
-        where: {
-          userId,
-
-          ...(status &&
-          typeof status === "string"
-            ? {
-                status: status as ApplicationStatus,
-              }
-            : {}),
-
-          ...(source &&
-          typeof source === "string"
-            ? {
-                source: {
-                  equals: source,
-                  mode: "insensitive",
-                },
-              }
-            : {}),
-
-          ...(search &&
-          typeof search === "string"
-            ? {
-                OR: [
-                  {
-                    company: {
-                      contains: search,
-                      mode: "insensitive",
-                    },
-                  },
-                  {
-                    position: {
-                      contains: search,
-                      mode: "insensitive",
-                    },
-                  },
-                  {
-                    location: {
-                      contains: search,
-                      mode: "insensitive",
-                    },
-                  },
-                  {
-                    source: {
-                      contains: search,
-                      mode: "insensitive",
-                    },
-                  },
-                ],
-              }
-            : {}),
-        },
-
-        orderBy: {
-          [sortField]: sortOrder,
-        },
-      });
-
-      return res.json({
-        applications,
-      });
-    } catch (error) {
-      console.error(error);
-
-      return res.status(500).json({
-        message: "Something went wrong",
+    if (!userId) {
+      return res.status(401).json({
+        message: "Unauthorized",
       });
     }
+
+    const {
+      search,
+      status,
+      source,
+      sort = "createdAt",
+      order = "desc",
+    } = req.query;
+
+    const sortField =
+      sort === "company" ||
+      sort === "position" ||
+      sort === "appliedDate" ||
+      sort === "createdAt" ||
+      sort === "updatedAt"
+        ? sort
+        : "createdAt";
+
+    const sortOrder = order === "asc" ? "asc" : "desc";
+
+    if (
+      status &&
+      typeof status === "string" &&
+      !validStatuses.includes(status as ApplicationStatus)
+    ) {
+      return res.status(400).json({
+        message: "Invalid application status",
+      });
+    }
+
+    const applications = await prisma.application.findMany({
+      where: {
+        userId,
+
+        ...(status && typeof status === "string"
+          ? {
+              status: status as ApplicationStatus,
+            }
+          : {}),
+
+        ...(source && typeof source === "string"
+          ? {
+              source: {
+                equals: source,
+                mode: "insensitive",
+              },
+            }
+          : {}),
+
+        ...(search && typeof search === "string"
+          ? {
+              OR: [
+                {
+                  company: {
+                    contains: search,
+                    mode: "insensitive",
+                  },
+                },
+                {
+                  position: {
+                    contains: search,
+                    mode: "insensitive",
+                  },
+                },
+                {
+                  location: {
+                    contains: search,
+                    mode: "insensitive",
+                  },
+                },
+                {
+                  source: {
+                    contains: search,
+                    mode: "insensitive",
+                  },
+                },
+              ],
+            }
+          : {}),
+      },
+
+      orderBy: {
+        [sortField]: sortOrder,
+      },
+    });
+
+    return res.json({
+      applications,
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      message: "Something went wrong",
+    });
   }
-);
+});
 
 // GET ONE APPLICATION
-router.get(
-  "/:id",
-  authenticateToken,
-  async (req: AuthRequest, res) => {
-    try {
-      const userId = req.user?.userId;
-      const applicationId = Number(req.params.id);
+router.get("/:id", authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.user?.userId;
+    const applicationId = Number(req.params.id);
 
-      if (!userId) {
-        return res.status(401).json({
-          message: "Unauthorized",
-        });
-      }
-
-      if (Number.isNaN(applicationId)) {
-        return res.status(400).json({
-          message: "Invalid application id",
-        });
-      }
-
-      const application = await prisma.application.findFirst({
-        where: {
-          id: applicationId,
-          userId,
-        },
-      });
-
-      if (!application) {
-        return res.status(404).json({
-          message: "Application not found",
-        });
-      }
-
-      return res.json({
-        application,
-      });
-    } catch (error) {
-      console.error(error);
-
-      return res.status(500).json({
-        message: "Something went wrong",
+    if (!userId) {
+      return res.status(401).json({
+        message: "Unauthorized",
       });
     }
+
+    if (Number.isNaN(applicationId)) {
+      return res.status(400).json({
+        message: "Invalid application id",
+      });
+    }
+
+    const application = await prisma.application.findFirst({
+      where: {
+        id: applicationId,
+        userId,
+      },
+    });
+
+    if (!application) {
+      return res.status(404).json({
+        message: "Application not found",
+      });
+    }
+
+    return res.json({
+      application,
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      message: "Something went wrong",
+    });
   }
-);
+});
 
 // UPDATE APPLICATION
-router.put(
-  "/:id",
-  authenticateToken,
-  async (req: AuthRequest, res) => {
-    try {
-      const userId = req.user?.userId;
-      const applicationId = Number(req.params.id);
+router.put("/:id", authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.user?.userId;
+    const applicationId = Number(req.params.id);
 
-      if (!userId) {
-        return res.status(401).json({
-          message: "Unauthorized",
-        });
-      }
-
-      if (Number.isNaN(applicationId)) {
-        return res.status(400).json({
-          message: "Invalid application id",
-        });
-      }
-
-      const existingApplication = await prisma.application.findFirst({
-        where: {
-          id: applicationId,
-          userId,
-        },
+    if (!userId) {
+      return res.status(401).json({
+        message: "Unauthorized",
       });
+    }
 
-      if (!existingApplication) {
-        return res.status(404).json({
-          message: "Application not found",
-        });
-      }
+    if (Number.isNaN(applicationId)) {
+      return res.status(400).json({
+        message: "Invalid application id",
+      });
+    }
 
-      const {
+    const existingApplication = await prisma.application.findFirst({
+      where: {
+        id: applicationId,
+        userId,
+      },
+    });
+
+    if (!existingApplication) {
+      return res.status(404).json({
+        message: "Application not found",
+      });
+    }
+
+    const {
+      company,
+      position,
+      status,
+      appliedDate,
+      location,
+      salary,
+      source,
+      jobUrl,
+      notes,
+      recruiterName,
+      recruiterEmail,
+    } = req.body;
+
+    if (status && !validStatuses.includes(status)) {
+      return res.status(400).json({
+        message: "Invalid application status",
+      });
+    }
+
+    const application = await prisma.application.update({
+      where: {
+        id: applicationId,
+      },
+      data: {
         company,
         position,
         status,
-        appliedDate,
+        appliedDate:
+          appliedDate === undefined
+            ? undefined
+            : appliedDate
+              ? new Date(appliedDate)
+              : null,
         location,
         salary,
         source,
@@ -286,104 +305,93 @@ router.put(
         notes,
         recruiterName,
         recruiterEmail,
-      } = req.body;
+      },
+    });
 
-      if (status && !validStatuses.includes(status)) {
-        return res.status(400).json({
-          message: "Invalid application status",
-        });
-      }
+    // Log normal application edit
+    await prisma.applicationActivity.create({
+      data: {
+        applicationId: application.id,
+        type: "APPLICATION_UPDATED",
+        description: "Application details updated",
+      },
+    });
 
-      const application = await prisma.application.update({
-        where: {
-          id: applicationId,
-        },
+    // If the edit also changed the status, log that separately
+    if (
+      status &&
+      existingApplication.status !== application.status
+    ) {
+      await prisma.applicationActivity.create({
         data: {
-          company,
-          position,
-          status,
-          appliedDate:
-            appliedDate === undefined
-              ? undefined
-              : appliedDate
-                ? new Date(appliedDate)
-                : null,
-          location,
-          salary,
-          source,
-          jobUrl,
-          notes,
-          recruiterName,
-          recruiterEmail,
+          applicationId: application.id,
+          type: "STATUS_CHANGED",
+          description: `Status changed from ${existingApplication.status} to ${application.status}`,
         },
-      });
-
-      return res.json({
-        message: "Application updated successfully",
-        application,
-      });
-    } catch (error) {
-      console.error(error);
-
-      return res.status(500).json({
-        message: "Something went wrong",
       });
     }
+
+    return res.json({
+      message: "Application updated successfully",
+      application,
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      message: "Something went wrong",
+    });
   }
-);
+});
 
 // DELETE APPLICATION
-router.delete(
-  "/:id",
-  authenticateToken,
-  async (req: AuthRequest, res) => {
-    try {
-      const userId = req.user?.userId;
-      const applicationId = Number(req.params.id);
+router.delete("/:id", authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.user?.userId;
+    const applicationId = Number(req.params.id);
 
-      if (!userId) {
-        return res.status(401).json({
-          message: "Unauthorized",
-        });
-      }
-
-      if (Number.isNaN(applicationId)) {
-        return res.status(400).json({
-          message: "Invalid application id",
-        });
-      }
-
-      const existingApplication = await prisma.application.findFirst({
-        where: {
-          id: applicationId,
-          userId,
-        },
-      });
-
-      if (!existingApplication) {
-        return res.status(404).json({
-          message: "Application not found",
-        });
-      }
-
-      await prisma.application.delete({
-        where: {
-          id: applicationId,
-        },
-      });
-
-      return res.json({
-        message: "Application deleted successfully",
-      });
-    } catch (error) {
-      console.error(error);
-
-      return res.status(500).json({
-        message: "Something went wrong",
+    if (!userId) {
+      return res.status(401).json({
+        message: "Unauthorized",
       });
     }
+
+    if (Number.isNaN(applicationId)) {
+      return res.status(400).json({
+        message: "Invalid application id",
+      });
+    }
+
+    const existingApplication = await prisma.application.findFirst({
+      where: {
+        id: applicationId,
+        userId,
+      },
+    });
+
+    if (!existingApplication) {
+      return res.status(404).json({
+        message: "Application not found",
+      });
+    }
+
+    await prisma.application.delete({
+      where: {
+        id: applicationId,
+      },
+    });
+
+    return res.json({
+      message: "Application deleted successfully",
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      message: "Something went wrong",
+    });
   }
-);
+});
 
 // UPDATE APPLICATION STATUS
 router.patch(
@@ -435,6 +443,17 @@ router.patch(
         },
       });
 
+      // Only record activity if the status actually changed
+      if (existingApplication.status !== application.status) {
+        await prisma.applicationActivity.create({
+          data: {
+            applicationId: application.id,
+            type: "STATUS_CHANGED",
+            description: `Status changed from ${existingApplication.status} to ${application.status}`,
+          },
+        });
+      }
+
       return res.json({
         message: "Application status updated successfully",
         application,
@@ -446,7 +465,63 @@ router.patch(
         message: "Something went wrong",
       });
     }
-  }
+  },
+);
+
+// GET APPLICATION ACTIVITY
+router.get(
+  "/:id/activities",
+  authenticateToken,
+  async (req: AuthRequest, res) => {
+    try {
+      const userId = req.user?.userId;
+      const applicationId = Number(req.params.id);
+
+      if (!userId) {
+        return res.status(401).json({
+          message: "Unauthorized",
+        });
+      }
+
+      if (Number.isNaN(applicationId)) {
+        return res.status(400).json({
+          message: "Invalid application id",
+        });
+      }
+
+      const application = await prisma.application.findFirst({
+        where: {
+          id: applicationId,
+          userId,
+        },
+      });
+
+      if (!application) {
+        return res.status(404).json({
+          message: "Application not found",
+        });
+      }
+
+      const activities = await prisma.applicationActivity.findMany({
+        where: {
+          applicationId,
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      });
+
+      return res.json({
+        activities,
+      });
+    } catch (error) {
+      console.error(error);
+
+      return res.status(500).json({
+        message: "Something went wrong",
+      });
+    }
+  },
 );
 
 export default router;

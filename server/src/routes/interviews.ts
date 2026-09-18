@@ -56,6 +56,14 @@ router.post(
         },
       });
 
+      await prisma.applicationActivity.create({
+        data: {
+          applicationId,
+          type: "INTERVIEW_CREATED",
+          description: `${interview.type} interview added`,
+        },
+      });
+
       return res.status(201).json({
         message: "Interview created successfully",
         interview,
@@ -67,7 +75,7 @@ router.post(
         message: "Something went wrong",
       });
     }
-  }
+  },
 );
 
 // GET ALL INTERVIEWS FOR ONE APPLICATION
@@ -123,7 +131,7 @@ router.get(
         message: "Something went wrong",
       });
     }
-  }
+  },
 );
 
 // UPDATE INTERVIEW
@@ -179,6 +187,14 @@ router.put(
         },
       });
 
+      await prisma.applicationActivity.create({
+        data: {
+          applicationId: interview.applicationId,
+          type: "INTERVIEW_UPDATED",
+          description: `${interview.type} interview updated`,
+        },
+      });
+
       return res.json({
         message: "Interview updated successfully",
         interview,
@@ -190,7 +206,7 @@ router.put(
         message: "Something went wrong",
       });
     }
-  }
+  },
 );
 
 // DELETE INTERVIEW
@@ -235,6 +251,14 @@ router.delete(
         },
       });
 
+      await prisma.applicationActivity.create({
+        data: {
+          applicationId: existingInterview.applicationId,
+          type: "INTERVIEW_DELETED",
+          description: `${existingInterview.type} interview deleted`,
+        },
+      });
+
       return res.json({
         message: "Interview deleted successfully",
       });
@@ -245,7 +269,7 @@ router.delete(
         message: "Something went wrong",
       });
     }
-  }
+  },
 );
 
 export default router;

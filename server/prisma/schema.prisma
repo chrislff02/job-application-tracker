@@ -44,8 +44,9 @@ model Application {
   recruiterName  String?
   recruiterEmail String?
 
-  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user           User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   interviews     Interview[]
+  activities     ApplicationActivity[]
 
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
@@ -63,4 +64,14 @@ model Interview {
 
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
+}
+
+model ApplicationActivity {
+  id            Int         @id @default(autoincrement())
+  applicationId Int
+  type          String
+  description   String
+  createdAt     DateTime    @default(now())
+
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
 }

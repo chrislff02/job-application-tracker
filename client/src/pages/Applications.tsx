@@ -14,15 +14,6 @@ interface Application {
   source: string | null;
 }
 
-interface Interview {
-  id: number;
-  applicationId: number;
-  type: string;
-  dateTime: string;
-  interviewer: string | null;
-  notes: string | null;
-}
-
 function Applications() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
