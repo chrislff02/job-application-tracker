@@ -6,6 +6,7 @@ import ProtectedRoute from "./routes/ProtectedRoute";
 import Applications from "./pages/Applications";
 import ApplicationDetails from "./pages/ApplicationDetails";
 import Pipeline from "./pages/Pipeline";
+import Analytics from "./pages/Analytics";
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
         <Route path="/applications" element={<Applications />} />
         <Route path="/applications/:id" element={<ApplicationDetails />} />
         <Route path="/pipeline" element={<Pipeline />} />
+        <Route path="/analytics" element={<Analytics />} />
       </Route>
     </Routes>
   );
