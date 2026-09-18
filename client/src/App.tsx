@@ -4,6 +4,7 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import Applications from "./pages/Applications";
+import ApplicationDetails from "./pages/ApplicationDetails";
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
       <Route element={<ProtectedRoute />}>
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/applications" element={<Applications />} />
+        <Route path="/applications/:id" element={<ApplicationDetails />} />
       </Route>
     </Routes>
   );

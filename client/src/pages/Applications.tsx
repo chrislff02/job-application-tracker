@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "../api/api";
 import "./Applications.css";
+import { Link } from "react-router-dom";
 
 interface Application {
   id: number;
@@ -11,6 +12,15 @@ interface Application {
   location: string | null;
   salary: string | null;
   source: string | null;
+}
+
+interface Interview {
+  id: number;
+  applicationId: number;
+  type: string;
+  dateTime: string;
+  interviewer: string | null;
+  notes: string | null;
 }
 
 function Applications() {
@@ -420,9 +430,17 @@ function Applications() {
               <tbody>
                 {applications.map((application) => (
                   <tr key={application.id}>
-                    <td>{application.company}</td>
+                    <td>
+                      <Link to={`/applications/${application.id}`}>
+                        {application.company}
+                      </Link>
+                    </td>
 
-                    <td>{application.position}</td>
+                    <td>
+                      <Link to={`/applications/${application.id}`}>
+                        {application.position}
+                      </Link>
+                    </td>
 
                     <td>
                       <span className="status-badge">{application.status}</span>
