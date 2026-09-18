@@ -27,12 +27,20 @@ interface Interview {
   notes: string | null;
 }
 
+interface ApplicationActivity {
+  id: number;
+  applicationId: number;
+  type: string;
+  description: string;
+  createdAt: string;
+}
+
 function ApplicationDetails() {
   const { id } = useParams();
 
   const [application, setApplication] = useState<Application | null>(null);
-
   const [interviews, setInterviews] = useState<Interview[]>([]);
+  const [activities, setActivities] = useState<ApplicationActivity[]>([]);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -60,6 +68,12 @@ function ApplicationDetails() {
     setInterviews(response.data.interviews);
   };
 
+  const fetchActivities = async () => {
+    const response = await api.get(`/applications/${id}/activities`);
+
+    setActivities(response.data.activities);
+  };
+
   useEffect(() => {
     const fetchApplication = async () => {
       try {
@@ -74,6 +88,12 @@ function ApplicationDetails() {
         );
 
         setInterviews(interviewResponse.data.interviews);
+
+        const activityResponse = await api.get(
+          `/applications/${id}/activities`,
+        );
+
+        setActivities(activityResponse.data.activities);
       } catch {
         setError("Unable to load application");
       } finally {
@@ -100,6 +120,7 @@ function ApplicationDetails() {
       });
 
       await fetchInterviews();
+      await fetchActivities();
 
       setInterviewType("");
       setInterviewDateTime("");
@@ -147,6 +168,7 @@ function ApplicationDetails() {
       setEditingInterview(null);
 
       await fetchInterviews();
+      await fetchActivities();
     } catch {
       setError("Unable to update interview");
     }
@@ -167,6 +189,7 @@ function ApplicationDetails() {
       await api.delete(`/interviews/${interviewId}`);
 
       await fetchInterviews();
+      await fetchActivities();
     } catch {
       setError("Unable to delete interview");
     }
@@ -256,6 +279,7 @@ function ApplicationDetails() {
 
           <div className="details-section">
             <h3>Notes</h3>
+
             <p>{application.notes || "No notes added."}</p>
           </div>
         </div>
@@ -398,6 +422,31 @@ function ApplicationDetails() {
                   <p>
                     <strong>Notes:</strong> {interview.notes || "—"}
                   </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="activity-section">
+          <div className="activity-header">
+            <h2>Activity</h2>
+            <p>History of changes for this application.</p>
+          </div>
+
+          {activities.length === 0 ? (
+            <div className="no-activity">No activity recorded yet.</div>
+          ) : (
+            <div className="activity-list">
+              {activities.map((activity) => (
+                <div className="activity-item" key={activity.id}>
+                  <div className="activity-marker" />
+
+                  <div className="activity-content">
+                    <p>{activity.description}</p>
+
+                    <span>{new Date(activity.createdAt).toLocaleString()}</span>
+                  </div>
                 </div>
               ))}
             </div>

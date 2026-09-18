@@ -60,7 +60,7 @@ router.post(
         data: {
           applicationId,
           type: "INTERVIEW_CREATED",
-          description: `${interview.type} interview added`,
+          description: `${interview.type} added`,
         },
       });
 
@@ -191,7 +191,7 @@ router.put(
         data: {
           applicationId: interview.applicationId,
           type: "INTERVIEW_UPDATED",
-          description: `${interview.type} interview updated`,
+          description: `${interview.type} updated`,
         },
       });
 
@@ -255,7 +255,7 @@ router.delete(
         data: {
           applicationId: existingInterview.applicationId,
           type: "INTERVIEW_DELETED",
-          description: `${existingInterview.type} interview deleted`,
+          description: `${existingInterview.type} deleted`,
         },
       });
 
