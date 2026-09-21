@@ -238,7 +238,16 @@ function Applications() {
 
       await api.delete(`/applications/${id}`);
 
-      await fetchApplications();
+      const isLastItemOnPage = applications.length === 1 && page > 1;
+
+      if (isLastItemOnPage) {
+        const previousPage = page - 1;
+
+        setPage(previousPage);
+        await fetchApplications(previousPage);
+      } else {
+        await fetchApplications(page);
+      }
     } catch {
       setError("Unable to delete application");
     }
