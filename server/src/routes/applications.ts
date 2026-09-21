@@ -99,7 +99,14 @@ router.get("/", authenticateToken, async (req: AuthRequest, res) => {
       source,
       sort = "createdAt",
       order = "desc",
+      page = "1",
+      limit = "10",
     } = req.query;
+
+    const pageNumber = Math.max(1, Number(page) || 1);
+    const limitNumber = Math.min(50, Math.max(1, Number(limit) || 10));
+
+    const skip = (pageNumber - 1) * limitNumber;
 
     const sortField =
       sort === "company" ||
@@ -122,64 +129,83 @@ router.get("/", authenticateToken, async (req: AuthRequest, res) => {
       });
     }
 
-    const applications = await prisma.application.findMany({
-      where: {
-        userId,
+    const where = {
+      userId,
 
-        ...(status && typeof status === "string"
-          ? {
-              status: status as ApplicationStatus,
-            }
-          : {}),
+      ...(status && typeof status === "string"
+        ? {
+            status: status as ApplicationStatus,
+          }
+        : {}),
 
-        ...(source && typeof source === "string"
-          ? {
-              source: {
-                equals: source,
-                mode: "insensitive",
+      ...(source && typeof source === "string"
+        ? {
+            source: {
+              equals: source,
+              mode: "insensitive" as const,
+            },
+          }
+        : {}),
+
+      ...(search && typeof search === "string"
+        ? {
+            OR: [
+              {
+                company: {
+                  contains: search,
+                  mode: "insensitive" as const,
+                },
               },
-            }
-          : {}),
+              {
+                position: {
+                  contains: search,
+                  mode: "insensitive" as const,
+                },
+              },
+              {
+                location: {
+                  contains: search,
+                  mode: "insensitive" as const,
+                },
+              },
+              {
+                source: {
+                  contains: search,
+                  mode: "insensitive" as const,
+                },
+              },
+            ],
+          }
+        : {}),
+    };
 
-        ...(search && typeof search === "string"
-          ? {
-              OR: [
-                {
-                  company: {
-                    contains: search,
-                    mode: "insensitive",
-                  },
-                },
-                {
-                  position: {
-                    contains: search,
-                    mode: "insensitive",
-                  },
-                },
-                {
-                  location: {
-                    contains: search,
-                    mode: "insensitive",
-                  },
-                },
-                {
-                  source: {
-                    contains: search,
-                    mode: "insensitive",
-                  },
-                },
-              ],
-            }
-          : {}),
-      },
+    const [applications, totalApplications] = await Promise.all([
+      prisma.application.findMany({
+        where,
+        orderBy: {
+          [sortField]: sortOrder,
+        },
+        skip,
+        take: limitNumber,
+      }),
 
-      orderBy: {
-        [sortField]: sortOrder,
-      },
-    });
+      prisma.application.count({
+        where,
+      }),
+    ]);
+
+    const totalPages = Math.max(1, Math.ceil(totalApplications / limitNumber));
 
     return res.json({
       applications,
+      pagination: {
+        page: pageNumber,
+        limit: limitNumber,
+        totalApplications,
+        totalPages,
+        hasPreviousPage: pageNumber > 1,
+        hasNextPage: pageNumber < totalPages,
+      },
     });
   } catch (error) {
     console.error(error);
@@ -318,10 +344,7 @@ router.put("/:id", authenticateToken, async (req: AuthRequest, res) => {
     });
 
     // If the edit also changed the status, log that separately
-    if (
-      status &&
-      existingApplication.status !== application.status
-    ) {
+    if (status && existingApplication.status !== application.status) {
       await prisma.applicationActivity.create({
         data: {
           applicationId: application.id,

@@ -33,6 +33,15 @@ interface ApplicationFormValues {
   recruiterEmail: string;
 }
 
+interface PaginationData {
+  page: number;
+  limit: number;
+  totalApplications: number;
+  totalPages: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
+}
+
 const emptyForm: ApplicationFormValues = {
   company: "",
   position: "",
@@ -52,6 +61,17 @@ function Applications() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const [page, setPage] = useState(1);
+
+  const [pagination, setPagination] = useState<PaginationData>({
+    page: 1,
+    limit: 10,
+    totalApplications: 0,
+    totalPages: 1,
+    hasPreviousPage: false,
+    hasNextPage: false,
+  });
+
   // Filters
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
@@ -69,7 +89,7 @@ function Applications() {
 
   const [editForm, setEditForm] = useState<ApplicationFormValues>(emptyForm);
 
-  const fetchApplications = async () => {
+  const fetchApplications = async (pageToFetch = page) => {
     try {
       setError("");
 
@@ -80,10 +100,13 @@ function Applications() {
           source: source || undefined,
           sort,
           order,
+          page: pageToFetch,
+          limit: 10,
         },
       });
 
       setApplications(response.data.applications);
+      setPagination(response.data.pagination);
     } catch {
       setError("Unable to load applications");
     } finally {
@@ -92,8 +115,8 @@ function Applications() {
   };
 
   useEffect(() => {
-    fetchApplications();
-  }, [search, status, source, sort, order]);
+    fetchApplications(page);
+  }, [search, status, source, sort, order, page]);
 
   const updateAddForm = (field: keyof ApplicationFormValues, value: string) => {
     setAddForm((currentForm) => ({
@@ -137,7 +160,8 @@ function Applications() {
       setAddForm(emptyForm);
       setShowForm(false);
 
-      await fetchApplications();
+      setPage(1);
+      await fetchApplications(1);
     } catch {
       setError("Unable to add application");
     }
@@ -287,12 +311,18 @@ function Applications() {
             type="text"
             placeholder="Search applications..."
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={(event) => {
+              setSearch(event.target.value);
+              setPage(1);
+            }}
           />
 
           <select
             value={status}
-            onChange={(event) => setStatus(event.target.value)}
+            onChange={(event) => {
+              setStatus(event.target.value);
+              setPage(1);
+            }}
           >
             <option value="">All Statuses</option>
             <option value="SAVED">Saved</option>
@@ -308,7 +338,10 @@ function Applications() {
 
           <select
             value={source}
-            onChange={(event) => setSource(event.target.value)}
+            onChange={(event) => {
+              setSource(event.target.value);
+              setPage(1);
+            }}
           >
             <option value="">All Sources</option>
             <option value="LinkedIn">LinkedIn</option>
@@ -321,7 +354,10 @@ function Applications() {
 
           <select
             value={sort}
-            onChange={(event) => setSort(event.target.value)}
+            onChange={(event) => {
+              setSort(event.target.value);
+              setPage(1);
+            }}
           >
             <option value="createdAt">Date Added</option>
             <option value="company">Company</option>
@@ -331,7 +367,10 @@ function Applications() {
 
           <select
             value={order}
-            onChange={(event) => setOrder(event.target.value)}
+            onChange={(event) => {
+              setOrder(event.target.value);
+              setPage(1);
+            }}
           >
             <option value="desc">Descending</option>
             <option value="asc">Ascending</option>
@@ -417,6 +456,30 @@ function Applications() {
             </table>
           )}
         </div>
+
+        {pagination.totalApplications > 0 && (
+          <div className="pagination">
+            <button
+              type="button"
+              disabled={!pagination.hasPreviousPage}
+              onClick={() => setPage((currentPage) => currentPage - 1)}
+            >
+              Previous
+            </button>
+
+            <span>
+              Page {pagination.page} of {pagination.totalPages}
+            </span>
+
+            <button
+              type="button"
+              disabled={!pagination.hasNextPage}
+              onClick={() => setPage((currentPage) => currentPage + 1)}
+            >
+              Next
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
