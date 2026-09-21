@@ -13,6 +13,10 @@ interface Application {
   location: string | null;
   salary: string | null;
   source: string | null;
+  jobUrl: string | null;
+  notes: string | null;
+  recruiterName: string | null;
+  recruiterEmail: string | null;
 }
 
 interface ApplicationFormValues {
@@ -23,6 +27,10 @@ interface ApplicationFormValues {
   location: string;
   salary: string;
   source: string;
+  jobUrl: string;
+  notes: string;
+  recruiterName: string;
+  recruiterEmail: string;
 }
 
 const emptyForm: ApplicationFormValues = {
@@ -33,6 +41,10 @@ const emptyForm: ApplicationFormValues = {
   location: "",
   salary: "",
   source: "",
+  jobUrl: "",
+  notes: "",
+  recruiterName: "",
+  recruiterEmail: "",
 };
 
 function Applications() {
@@ -116,6 +128,10 @@ function Applications() {
         location: addForm.location || null,
         salary: addForm.salary || null,
         source: addForm.source || null,
+        jobUrl: addForm.jobUrl || null,
+        notes: addForm.notes || null,
+        recruiterName: addForm.recruiterName || null,
+        recruiterEmail: addForm.recruiterEmail || null,
       });
 
       setAddForm(emptyForm);
@@ -140,6 +156,10 @@ function Applications() {
       location: application.location || "",
       salary: application.salary || "",
       source: application.source || "",
+      jobUrl: application.jobUrl || "",
+      notes: application.notes || "",
+      recruiterName: application.recruiterName || "",
+      recruiterEmail: application.recruiterEmail || "",
     });
 
     setShowForm(false);
@@ -165,6 +185,10 @@ function Applications() {
         location: editForm.location || null,
         salary: editForm.salary || null,
         source: editForm.source || null,
+        jobUrl: editForm.jobUrl || null,
+        notes: editForm.notes || null,
+        recruiterName: editForm.recruiterName || null,
+        recruiterEmail: editForm.recruiterEmail || null,
       });
 
       setEditingApplication(null);
@@ -290,6 +314,9 @@ function Applications() {
             <option value="LinkedIn">LinkedIn</option>
             <option value="Indeed">Indeed</option>
             <option value="Company Website">Company Website</option>
+            <option value="Referral">Referral</option>
+            <option value="Recruiter">Recruiter</option>
+            <option value="Other">Other</option>
           </select>
 
           <select

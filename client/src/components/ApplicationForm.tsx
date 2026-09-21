@@ -6,6 +6,10 @@ interface ApplicationFormValues {
   location: string;
   salary: string;
   source: string;
+  jobUrl: string;
+  notes: string;
+  recruiterName: string;
+  recruiterEmail: string;
 }
 
 interface ApplicationFormProps {
@@ -88,6 +92,33 @@ function ApplicationForm({
         <option value="Recruiter">Recruiter</option>
         <option value="Other">Other</option>
       </select>
+
+      <input
+        type="url"
+        placeholder="Job Posting URL"
+        value={values.jobUrl}
+        onChange={(event) => onChange("jobUrl", event.target.value)}
+      />
+
+      <input
+        type="text"
+        placeholder="Recruiter Name"
+        value={values.recruiterName}
+        onChange={(event) => onChange("recruiterName", event.target.value)}
+      />
+
+      <input
+        type="email"
+        placeholder="Recruiter Email"
+        value={values.recruiterEmail}
+        onChange={(event) => onChange("recruiterEmail", event.target.value)}
+      />
+
+      <textarea
+        placeholder="Notes"
+        value={values.notes}
+        onChange={(event) => onChange("notes", event.target.value)}
+      />
 
       <div className="form-actions">
         <button type="submit">{submitLabel}</button>
