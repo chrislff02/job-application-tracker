@@ -204,3 +204,29 @@
 .applications-table a:hover {
   text-decoration: underline;
 }
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-field label {
+  color: #9ca3af;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.form-field-full {
+  grid-column: 1 / -1;
+}
+
+.add-application-form textarea {
+  background: #111827;
+  color: #f9fafb;
+  border: 1px solid #374151;
+}
+
+.add-application-form textarea {
+  min-height: 100px;
+}
