@@ -5,6 +5,7 @@ import { ApplicationStatus } from "../generated/prisma/client";
 
 const router = Router();
 
+// Stats
 router.get("/stats", authenticateToken, async (req: AuthRequest, res) => {
   try {
     const userId = req.user?.userId;
@@ -120,6 +121,80 @@ router.get("/stats", authenticateToken, async (req: AuthRequest, res) => {
       offers,
       responseRate,
       interviewConversionRate,
+    });
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      message: "Something went wrong",
+    });
+  }
+});
+
+// DASHBOARD OVERVIEW
+router.get("/overview", authenticateToken, async (req: AuthRequest, res) => {
+  try {
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        message: "Unauthorized",
+      });
+    }
+
+    const now = new Date();
+
+    const [recentApplications, upcomingInterviews] = await Promise.all([
+      prisma.application.findMany({
+        where: {
+          userId,
+        },
+        select: {
+          id: true,
+          company: true,
+          position: true,
+          status: true,
+          location: true,
+          createdAt: true,
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+        take: 5,
+      }),
+
+      prisma.interview.findMany({
+        where: {
+          application: {
+            userId,
+          },
+          dateTime: {
+            gte: now,
+          },
+        },
+        select: {
+          id: true,
+          type: true,
+          dateTime: true,
+          interviewer: true,
+          application: {
+            select: {
+              id: true,
+              company: true,
+              position: true,
+            },
+          },
+        },
+        orderBy: {
+          dateTime: "asc",
+        },
+        take: 5,
+      }),
+    ]);
+
+    return res.json({
+      recentApplications,
+      upcomingInterviews,
     });
   } catch (error) {
     console.error(error);
