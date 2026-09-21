@@ -18,6 +18,7 @@ interface ApplicationFormProps {
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
   onCancel: () => void;
   submitLabel: string;
+  isSubmitting: boolean;
 }
 
 function ApplicationForm({
@@ -26,6 +27,7 @@ function ApplicationForm({
   onSubmit,
   onCancel,
   submitLabel,
+  isSubmitting,
 }: ApplicationFormProps) {
   return (
     <form className="add-application-form" onSubmit={onSubmit}>
@@ -36,6 +38,7 @@ function ApplicationForm({
           type="text"
           value={values.company}
           onChange={(event) => onChange("company", event.target.value)}
+          disabled={isSubmitting}
           required
         />
       </div>
@@ -47,6 +50,7 @@ function ApplicationForm({
           type="text"
           value={values.position}
           onChange={(event) => onChange("position", event.target.value)}
+          disabled={isSubmitting}
           required
         />
       </div>
@@ -57,6 +61,7 @@ function ApplicationForm({
           id="status"
           value={values.status}
           onChange={(event) => onChange("status", event.target.value)}
+          disabled={isSubmitting}
         >
           <option value="SAVED">Saved</option>
           <option value="APPLIED">Applied</option>
@@ -77,6 +82,7 @@ function ApplicationForm({
           type="date"
           value={values.appliedDate}
           onChange={(event) => onChange("appliedDate", event.target.value)}
+          disabled={isSubmitting}
         />
       </div>
 
@@ -87,6 +93,7 @@ function ApplicationForm({
           type="text"
           value={values.location}
           onChange={(event) => onChange("location", event.target.value)}
+          disabled={isSubmitting}
         />
       </div>
 
@@ -97,6 +104,7 @@ function ApplicationForm({
           type="text"
           value={values.salary}
           onChange={(event) => onChange("salary", event.target.value)}
+          disabled={isSubmitting}
         />
       </div>
 
@@ -106,6 +114,7 @@ function ApplicationForm({
           id="source"
           value={values.source}
           onChange={(event) => onChange("source", event.target.value)}
+          disabled={isSubmitting}
         >
           <option value="">Select Source</option>
           <option value="LinkedIn">LinkedIn</option>
@@ -124,6 +133,7 @@ function ApplicationForm({
           type="url"
           value={values.jobUrl}
           onChange={(event) => onChange("jobUrl", event.target.value)}
+          disabled={isSubmitting}
         />
       </div>
 
@@ -134,6 +144,7 @@ function ApplicationForm({
           type="text"
           value={values.recruiterName}
           onChange={(event) => onChange("recruiterName", event.target.value)}
+          disabled={isSubmitting}
         />
       </div>
 
@@ -144,6 +155,7 @@ function ApplicationForm({
           type="email"
           value={values.recruiterEmail}
           onChange={(event) => onChange("recruiterEmail", event.target.value)}
+          disabled={isSubmitting}
         />
       </div>
 
@@ -153,13 +165,16 @@ function ApplicationForm({
           id="notes"
           value={values.notes}
           onChange={(event) => onChange("notes", event.target.value)}
+          disabled={isSubmitting}
         />
       </div>
 
       <div className="form-actions">
-        <button type="submit">{submitLabel}</button>
+        <button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? `${submitLabel}...` : submitLabel}
+        </button>
 
-        <button type="button" onClick={onCancel}>
+        <button type="button" onClick={onCancel} disabled={isSubmitting}>
           Cancel
         </button>
       </div>

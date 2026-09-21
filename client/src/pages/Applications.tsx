@@ -79,6 +79,13 @@ function Applications() {
   const [sort, setSort] = useState("createdAt");
   const [order, setOrder] = useState("desc");
 
+  // Request states
+  const [addingApplication, setAddingApplication] = useState(false);
+  const [updatingApplication, setUpdatingApplication] = useState(false);
+  const [deletingApplicationId, setDeletingApplicationId] = useState<
+    number | null
+  >(null);
+
   // Add application
   const [showForm, setShowForm] = useState(false);
   const [addForm, setAddForm] = useState<ApplicationFormValues>(emptyForm);
@@ -91,6 +98,7 @@ function Applications() {
 
   const fetchApplications = async (pageToFetch = page) => {
     try {
+      setLoading(true);
       setError("");
 
       const response = await api.get("/applications", {
@@ -108,7 +116,7 @@ function Applications() {
       setApplications(response.data.applications);
       setPagination(response.data.pagination);
     } catch {
-      setError("Unable to load applications");
+      setError("Unable to load applications. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -142,6 +150,7 @@ function Applications() {
 
     try {
       setError("");
+      setAddingApplication(true);
 
       await api.post("/applications", {
         company: addForm.company,
@@ -164,6 +173,8 @@ function Applications() {
       await fetchApplications(1);
     } catch {
       setError("Unable to add application");
+    } finally {
+      setAddingApplication(false);
     }
   };
 
@@ -200,6 +211,7 @@ function Applications() {
 
     try {
       setError("");
+      setUpdatingApplication(true);
 
       await api.put(`/applications/${editingApplication.id}`, {
         company: editForm.company,
@@ -218,9 +230,11 @@ function Applications() {
       setEditingApplication(null);
       setEditForm(emptyForm);
 
-      await fetchApplications();
+      await fetchApplications(page);
     } catch {
       setError("Unable to update application");
+    } finally {
+      setUpdatingApplication(false);
     }
   };
 
@@ -235,6 +249,7 @@ function Applications() {
 
     try {
       setError("");
+      setDeletingApplicationId(id);
 
       await api.delete(`/applications/${id}`);
 
@@ -250,6 +265,8 @@ function Applications() {
       }
     } catch {
       setError("Unable to delete application");
+    } finally {
+      setDeletingApplicationId(null);
     }
   };
 
@@ -259,10 +276,6 @@ function Applications() {
       .toLowerCase()
       .replace(/\b\w/g, (letter) => letter.toUpperCase());
   };
-
-  if (loading) {
-    return <p>Loading applications...</p>;
-  }
 
   return (
     <div className="applications-page">
@@ -296,6 +309,7 @@ function Applications() {
               setError("");
             }}
             submitLabel="Save Application"
+            isSubmitting={addingApplication}
           />
         )}
 
@@ -310,10 +324,11 @@ function Applications() {
               setError("");
             }}
             submitLabel="Save Changes"
+            isSubmitting={updatingApplication}
           />
         )}
 
-        {error && <p>{error}</p>}
+        {error && <div className="applications-error">{error}</div>}
 
         <div className="application-controls">
           <input
@@ -387,8 +402,25 @@ function Applications() {
         </div>
 
         <div className="applications-table-wrapper">
-          {applications.length === 0 ? (
-            <div className="empty-state">No applications found.</div>
+          {loading ? (
+            <div className="applications-state">
+              <div className="loading-spinner"></div>
+              <p>Loading applications...</p>
+            </div>
+          ) : applications.length === 0 ? (
+            <div className="applications-state">
+              <h3>
+                {search || status || source
+                  ? "No matching applications"
+                  : "No applications yet"}
+              </h3>
+
+              <p>
+                {search || status || source
+                  ? "Try changing your search or filters."
+                  : "Add your first job application to get started."}
+              </p>
+            </div>
           ) : (
             <table className="applications-table">
               <thead>
@@ -444,6 +476,7 @@ function Applications() {
                       <div className="table-actions">
                         <button
                           type="button"
+                          disabled={deletingApplicationId === application.id}
                           onClick={() => startEditing(application)}
                         >
                           Edit
@@ -451,11 +484,14 @@ function Applications() {
 
                         <button
                           type="button"
+                          disabled={deletingApplicationId === application.id}
                           onClick={() =>
                             handleDeleteApplication(application.id)
                           }
                         >
-                          Delete
+                          {deletingApplicationId === application.id
+                            ? "Deleting..."
+                            : "Delete"}
                         </button>
                       </div>
                     </td>
@@ -470,7 +506,7 @@ function Applications() {
           <div className="pagination">
             <button
               type="button"
-              disabled={!pagination.hasPreviousPage}
+              disabled={loading || !pagination.hasPreviousPage}
               onClick={() => setPage((currentPage) => currentPage - 1)}
             >
               Previous
@@ -482,7 +518,7 @@ function Applications() {
 
             <button
               type="button"
-              disabled={!pagination.hasNextPage}
+              disabled={loading || !pagination.hasNextPage}
               onClick={() => setPage((currentPage) => currentPage + 1)}
             >
               Next
