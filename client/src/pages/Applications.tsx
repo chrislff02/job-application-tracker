@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import api from "../api/api";
-import "./Applications.css";
 import { Link } from "react-router-dom";
+import api from "../api/api";
+import ApplicationForm from "../components/ApplicationForm";
+import "./Applications.css";
 
 interface Application {
   id: number;
@@ -13,6 +14,26 @@ interface Application {
   salary: string | null;
   source: string | null;
 }
+
+interface ApplicationFormValues {
+  company: string;
+  position: string;
+  status: string;
+  appliedDate: string;
+  location: string;
+  salary: string;
+  source: string;
+}
+
+const emptyForm: ApplicationFormValues = {
+  company: "",
+  position: "",
+  status: "SAVED",
+  appliedDate: "",
+  location: "",
+  salary: "",
+  source: "",
+};
 
 function Applications() {
   const [applications, setApplications] = useState<Application[]>([]);
@@ -26,27 +47,15 @@ function Applications() {
   const [sort, setSort] = useState("createdAt");
   const [order, setOrder] = useState("desc");
 
-  // Add application form
+  // Add application
   const [showForm, setShowForm] = useState(false);
-  const [company, setCompany] = useState("");
-  const [position, setPosition] = useState("");
-  const [newStatus, setNewStatus] = useState("SAVED");
-  const [appliedDate, setAppliedDate] = useState("");
-  const [location, setLocation] = useState("");
-  const [salary, setSalary] = useState("");
-  const [newSource, setNewSource] = useState("");
+  const [addForm, setAddForm] = useState<ApplicationFormValues>(emptyForm);
 
-  // Edit application form
+  // Edit application
   const [editingApplication, setEditingApplication] =
     useState<Application | null>(null);
 
-  const [editCompany, setEditCompany] = useState("");
-  const [editPosition, setEditPosition] = useState("");
-  const [editStatus, setEditStatus] = useState("");
-  const [editAppliedDate, setEditAppliedDate] = useState("");
-  const [editLocation, setEditLocation] = useState("");
-  const [editSalary, setEditSalary] = useState("");
-  const [editSource, setEditSource] = useState("");
+  const [editForm, setEditForm] = useState<ApplicationFormValues>(emptyForm);
 
   const fetchApplications = async () => {
     try {
@@ -74,6 +83,23 @@ function Applications() {
     fetchApplications();
   }, [search, status, source, sort, order]);
 
+  const updateAddForm = (field: keyof ApplicationFormValues, value: string) => {
+    setAddForm((currentForm) => ({
+      ...currentForm,
+      [field]: value,
+    }));
+  };
+
+  const updateEditForm = (
+    field: keyof ApplicationFormValues,
+    value: string,
+  ) => {
+    setEditForm((currentForm) => ({
+      ...currentForm,
+      [field]: value,
+    }));
+  };
+
   const handleAddApplication = async (
     event: React.FormEvent<HTMLFormElement>,
   ) => {
@@ -83,23 +109,16 @@ function Applications() {
       setError("");
 
       await api.post("/applications", {
-        company,
-        position,
-        status: newStatus,
-        appliedDate: appliedDate || null,
-        location: location || null,
-        salary: salary || null,
-        source: newSource || null,
+        company: addForm.company,
+        position: addForm.position,
+        status: addForm.status,
+        appliedDate: addForm.appliedDate || null,
+        location: addForm.location || null,
+        salary: addForm.salary || null,
+        source: addForm.source || null,
       });
 
-      setCompany("");
-      setPosition("");
-      setNewStatus("SAVED");
-      setAppliedDate("");
-      setLocation("");
-      setSalary("");
-      setNewSource("");
-
+      setAddForm(emptyForm);
       setShowForm(false);
 
       await fetchApplications();
@@ -111,17 +130,17 @@ function Applications() {
   const startEditing = (application: Application) => {
     setEditingApplication(application);
 
-    setEditCompany(application.company);
-    setEditPosition(application.position);
-    setEditStatus(application.status);
-
-    setEditAppliedDate(
-      application.appliedDate ? application.appliedDate.slice(0, 10) : "",
-    );
-
-    setEditLocation(application.location || "");
-    setEditSalary(application.salary || "");
-    setEditSource(application.source || "");
+    setEditForm({
+      company: application.company,
+      position: application.position,
+      status: application.status,
+      appliedDate: application.appliedDate
+        ? application.appliedDate.slice(0, 10)
+        : "",
+      location: application.location || "",
+      salary: application.salary || "",
+      source: application.source || "",
+    });
 
     setShowForm(false);
   };
@@ -139,16 +158,17 @@ function Applications() {
       setError("");
 
       await api.put(`/applications/${editingApplication.id}`, {
-        company: editCompany,
-        position: editPosition,
-        status: editStatus,
-        appliedDate: editAppliedDate || null,
-        location: editLocation || null,
-        salary: editSalary || null,
-        source: editSource || null,
+        company: editForm.company,
+        position: editForm.position,
+        status: editForm.status,
+        appliedDate: editForm.appliedDate || null,
+        location: editForm.location || null,
+        salary: editForm.salary || null,
+        source: editForm.source || null,
       });
 
       setEditingApplication(null);
+      setEditForm(emptyForm);
 
       await fetchApplications();
     } catch {
@@ -176,6 +196,13 @@ function Applications() {
     }
   };
 
+  const formatStatus = (statusValue: string) => {
+    return statusValue
+      .replaceAll("_", " ")
+      .toLowerCase()
+      .replace(/\b\w/g, (letter) => letter.toUpperCase());
+  };
+
   if (loading) {
     return <p>Loading applications...</p>;
   }
@@ -188,164 +215,49 @@ function Applications() {
 
           <button
             className="add-application-button"
+            type="button"
             onClick={() => {
               setEditingApplication(null);
+              setEditForm(emptyForm);
+              setAddForm(emptyForm);
               setShowForm(true);
+              setError("");
             }}
           >
             + Add Application
           </button>
         </div>
 
-        {/* ADD APPLICATION FORM */}
         {showForm && (
-          <form
-            className="add-application-form"
+          <ApplicationForm
+            values={addForm}
+            onChange={updateAddForm}
             onSubmit={handleAddApplication}
-          >
-            <input
-              type="text"
-              placeholder="Company"
-              value={company}
-              onChange={(event) => setCompany(event.target.value)}
-              required
-            />
-
-            <input
-              type="text"
-              placeholder="Position"
-              value={position}
-              onChange={(event) => setPosition(event.target.value)}
-              required
-            />
-
-            <select
-              value={newStatus}
-              onChange={(event) => setNewStatus(event.target.value)}
-            >
-              <option value="SAVED">Saved</option>
-              <option value="APPLIED">Applied</option>
-              <option value="ASSESSMENT">Assessment</option>
-              <option value="PHONE_SCREEN">Phone Screen</option>
-              <option value="INTERVIEW">Interview</option>
-              <option value="FINAL_INTERVIEW">Final Interview</option>
-              <option value="OFFER">Offer</option>
-              <option value="REJECTED">Rejected</option>
-              <option value="WITHDRAWN">Withdrawn</option>
-            </select>
-
-            <input
-              type="date"
-              value={appliedDate}
-              onChange={(event) => setAppliedDate(event.target.value)}
-            />
-
-            <input
-              type="text"
-              placeholder="Location"
-              value={location}
-              onChange={(event) => setLocation(event.target.value)}
-            />
-
-            <input
-              type="text"
-              placeholder="Salary"
-              value={salary}
-              onChange={(event) => setSalary(event.target.value)}
-            />
-
-            <input
-              type="text"
-              placeholder="Source"
-              value={newSource}
-              onChange={(event) => setNewSource(event.target.value)}
-            />
-
-            <div className="form-actions">
-              <button type="submit">Save Application</button>
-
-              <button type="button" onClick={() => setShowForm(false)}>
-                Cancel
-              </button>
-            </div>
-          </form>
+            onCancel={() => {
+              setShowForm(false);
+              setAddForm(emptyForm);
+              setError("");
+            }}
+            submitLabel="Save Application"
+          />
         )}
 
-        {/* EDIT APPLICATION FORM */}
         {editingApplication && (
-          <form
-            className="add-application-form"
+          <ApplicationForm
+            values={editForm}
+            onChange={updateEditForm}
             onSubmit={handleUpdateApplication}
-          >
-            <input
-              type="text"
-              value={editCompany}
-              onChange={(event) => setEditCompany(event.target.value)}
-              required
-            />
-
-            <input
-              type="text"
-              value={editPosition}
-              onChange={(event) => setEditPosition(event.target.value)}
-              required
-            />
-
-            <select
-              value={editStatus}
-              onChange={(event) => setEditStatus(event.target.value)}
-            >
-              <option value="SAVED">Saved</option>
-              <option value="APPLIED">Applied</option>
-              <option value="ASSESSMENT">Assessment</option>
-              <option value="PHONE_SCREEN">Phone Screen</option>
-              <option value="INTERVIEW">Interview</option>
-              <option value="FINAL_INTERVIEW">Final Interview</option>
-              <option value="OFFER">Offer</option>
-              <option value="REJECTED">Rejected</option>
-              <option value="WITHDRAWN">Withdrawn</option>
-            </select>
-
-            <input
-              type="date"
-              value={editAppliedDate}
-              onChange={(event) => setEditAppliedDate(event.target.value)}
-            />
-
-            <input
-              type="text"
-              placeholder="Location"
-              value={editLocation}
-              onChange={(event) => setEditLocation(event.target.value)}
-            />
-
-            <input
-              type="text"
-              placeholder="Salary"
-              value={editSalary}
-              onChange={(event) => setEditSalary(event.target.value)}
-            />
-
-            <input
-              type="text"
-              placeholder="Source"
-              value={editSource}
-              onChange={(event) => setEditSource(event.target.value)}
-            />
-
-            <div className="form-actions">
-              <button type="submit">Save Changes</button>
-
-              <button type="button" onClick={() => setEditingApplication(null)}>
-                Cancel
-              </button>
-            </div>
-          </form>
+            onCancel={() => {
+              setEditingApplication(null);
+              setEditForm(emptyForm);
+              setError("");
+            }}
+            submitLabel="Save Changes"
+          />
         )}
 
         {error && <p>{error}</p>}
 
-        {/* SEARCH / FILTER / SORT */}
         <div className="application-controls">
           <input
             type="text"
@@ -399,7 +311,6 @@ function Applications() {
           </select>
         </div>
 
-        {/* APPLICATION TABLE */}
         <div className="applications-table-wrapper">
           {applications.length === 0 ? (
             <div className="empty-state">No applications found.</div>
@@ -434,7 +345,9 @@ function Applications() {
                     </td>
 
                     <td>
-                      <span className="status-badge">{application.status}</span>
+                      <span className="status-badge">
+                        {formatStatus(application.status)}
+                      </span>
                     </td>
 
                     <td>
@@ -449,9 +362,7 @@ function Applications() {
                     </td>
 
                     <td>{application.location || "—"}</td>
-
                     <td>{application.salary || "—"}</td>
-
                     <td>{application.source || "—"}</td>
 
                     <td>
