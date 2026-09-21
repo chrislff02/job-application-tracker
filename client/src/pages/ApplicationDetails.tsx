@@ -43,7 +43,8 @@ function ApplicationDetails() {
   const [activities, setActivities] = useState<ApplicationActivity[]>([]);
 
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [pageError, setPageError] = useState("");
+  const [actionError, setActionError] = useState("");
 
   // Add interview
   const [showInterviewForm, setShowInterviewForm] = useState(false);
@@ -64,44 +65,37 @@ function ApplicationDetails() {
 
   const fetchInterviews = async () => {
     const response = await api.get(`/applications/${id}/interviews`);
-
     setInterviews(response.data.interviews);
   };
 
   const fetchActivities = async () => {
     const response = await api.get(`/applications/${id}/activities`);
-
     setActivities(response.data.activities);
   };
 
   useEffect(() => {
-    const fetchApplication = async () => {
+    const fetchApplicationDetails = async () => {
       try {
-        setError("");
+        setPageError("");
 
-        const applicationResponse = await api.get(`/applications/${id}`);
+        const [applicationResponse, interviewResponse, activityResponse] =
+          await Promise.all([
+            api.get(`/applications/${id}`),
+            api.get(`/applications/${id}/interviews`),
+            api.get(`/applications/${id}/activities`),
+          ]);
 
         setApplication(applicationResponse.data.application);
-
-        const interviewResponse = await api.get(
-          `/applications/${id}/interviews`,
-        );
-
         setInterviews(interviewResponse.data.interviews);
-
-        const activityResponse = await api.get(
-          `/applications/${id}/activities`,
-        );
-
         setActivities(activityResponse.data.activities);
       } catch {
-        setError("Unable to load application");
+        setPageError("Unable to load application");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchApplication();
+    fetchApplicationDetails();
   }, [id]);
 
   const handleAddInterview = async (
@@ -110,7 +104,7 @@ function ApplicationDetails() {
     event.preventDefault();
 
     try {
-      setError("");
+      setActionError("");
 
       await api.post(`/applications/${id}/interviews`, {
         type: interviewType,
@@ -119,17 +113,15 @@ function ApplicationDetails() {
         notes: interviewNotes || null,
       });
 
-      await fetchInterviews();
-      await fetchActivities();
+      await Promise.all([fetchInterviews(), fetchActivities()]);
 
       setInterviewType("");
       setInterviewDateTime("");
       setInterviewer("");
       setInterviewNotes("");
-
       setShowInterviewForm(false);
     } catch {
-      setError("Unable to add interview");
+      setActionError("Unable to add interview");
     }
   };
 
@@ -137,13 +129,12 @@ function ApplicationDetails() {
     setEditingInterview(interview);
 
     setEditType(interview.type);
-
     setEditDateTime(interview.dateTime ? interview.dateTime.slice(0, 16) : "");
-
     setEditInterviewer(interview.interviewer || "");
     setEditNotes(interview.notes || "");
 
     setShowInterviewForm(false);
+    setActionError("");
   };
 
   const handleUpdateInterview = async (
@@ -156,7 +147,7 @@ function ApplicationDetails() {
     }
 
     try {
-      setError("");
+      setActionError("");
 
       await api.put(`/interviews/${editingInterview.id}`, {
         type: editType,
@@ -167,10 +158,9 @@ function ApplicationDetails() {
 
       setEditingInterview(null);
 
-      await fetchInterviews();
-      await fetchActivities();
+      await Promise.all([fetchInterviews(), fetchActivities()]);
     } catch {
-      setError("Unable to update interview");
+      setActionError("Unable to update interview");
     }
   };
 
@@ -184,23 +174,29 @@ function ApplicationDetails() {
     }
 
     try {
-      setError("");
+      setActionError("");
 
       await api.delete(`/interviews/${interviewId}`);
 
-      await fetchInterviews();
-      await fetchActivities();
+      await Promise.all([fetchInterviews(), fetchActivities()]);
     } catch {
-      setError("Unable to delete interview");
+      setActionError("Unable to delete interview");
     }
+  };
+
+  const formatStatus = (status: string) => {
+    return status
+      .replaceAll("_", " ")
+      .toLowerCase()
+      .replace(/\b\w/g, (letter) => letter.toUpperCase());
   };
 
   if (loading) {
     return <p>Loading application...</p>;
   }
 
-  if (error) {
-    return <p>{error}</p>;
+  if (pageError) {
+    return <p>{pageError}</p>;
   }
 
   if (!application) {
@@ -214,14 +210,16 @@ function ApplicationDetails() {
           ← Back to Applications
         </Link>
 
-        <div className="application-details-card">
+        <section className="application-details-card">
           <div className="application-details-header">
             <div>
               <h1>{application.company}</h1>
               <h2>{application.position}</h2>
             </div>
 
-            <span className="details-status">{application.status}</span>
+            <span className="details-status">
+              {formatStatus(application.status)}
+            </span>
           </div>
 
           <div className="details-grid">
@@ -261,7 +259,14 @@ function ApplicationDetails() {
 
             <div>
               <span>Recruiter Email</span>
-              <strong>{application.recruiterEmail || "—"}</strong>
+
+              {application.recruiterEmail ? (
+                <a href={`mailto:${application.recruiterEmail}`}>
+                  {application.recruiterEmail}
+                </a>
+              ) : (
+                <strong>—</strong>
+              )}
             </div>
           </div>
 
@@ -279,12 +284,11 @@ function ApplicationDetails() {
 
           <div className="details-section">
             <h3>Notes</h3>
-
             <p>{application.notes || "No notes added."}</p>
           </div>
-        </div>
+        </section>
 
-        <div className="interviews-section">
+        <section className="interviews-section">
           <div className="interviews-header">
             <div>
               <h2>Interviews</h2>
@@ -297,11 +301,14 @@ function ApplicationDetails() {
               onClick={() => {
                 setEditingInterview(null);
                 setShowInterviewForm(true);
+                setActionError("");
               }}
             >
               + Add Interview
             </button>
           </div>
+
+          {actionError && <p className="action-error">{actionError}</p>}
 
           {showInterviewForm && (
             <form className="interview-form" onSubmit={handleAddInterview}>
@@ -338,7 +345,10 @@ function ApplicationDetails() {
 
                 <button
                   type="button"
-                  onClick={() => setShowInterviewForm(false)}
+                  onClick={() => {
+                    setShowInterviewForm(false);
+                    setActionError("");
+                  }}
                 >
                   Cancel
                 </button>
@@ -378,7 +388,13 @@ function ApplicationDetails() {
               <div className="interview-form-actions">
                 <button type="submit">Save Changes</button>
 
-                <button type="button" onClick={() => setEditingInterview(null)}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingInterview(null);
+                    setActionError("");
+                  }}
+                >
                   Cancel
                 </button>
               </div>
@@ -426,9 +442,9 @@ function ApplicationDetails() {
               ))}
             </div>
           )}
-        </div>
+        </section>
 
-        <div className="activity-section">
+        <section className="activity-section">
           <div className="activity-header">
             <h2>Activity</h2>
             <p>History of changes for this application.</p>
@@ -451,7 +467,7 @@ function ApplicationDetails() {
               ))}
             </div>
           )}
-        </div>
+        </section>
       </div>
     </div>
   );
