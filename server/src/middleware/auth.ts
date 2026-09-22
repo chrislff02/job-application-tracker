@@ -13,7 +13,7 @@ export interface AuthRequest extends Request {
 export function authenticateToken(
   req: AuthRequest,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) {
   const authHeader = req.headers.authorization;
 
@@ -40,7 +40,7 @@ export function authenticateToken(
 
     next();
   } catch {
-    return res.status(403).json({
+    return res.status(401).json({
       message: "Invalid or expired token",
     });
   }
