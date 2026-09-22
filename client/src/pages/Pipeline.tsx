@@ -36,9 +36,14 @@ function Pipeline() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
   const [dragOverStatus, setDragOverStatus] = useState<string | null>(null);
 
   const [draggedApplicationId, setDraggedApplicationId] = useState<
+    number | null
+  >(null);
+
+  const [updatingApplicationId, setUpdatingApplicationId] = useState<
     number | null
   >(null);
 
@@ -60,35 +65,27 @@ function Pipeline() {
     fetchApplications();
   }, []);
 
-  const handleDrop = async (newStatus: string) => {
-    if (draggedApplicationId === null) {
-      return;
-    }
+  const updateApplicationStatus = async (
+    applicationId: number,
+    newStatus: string,
+  ) => {
+    const application = applications.find((item) => item.id === applicationId);
 
-    const application = applications.find(
-      (item) => item.id === draggedApplicationId,
-    );
-
-    if (!application) {
-      setDraggedApplicationId(null);
-      return;
-    }
-
-    if (application.status === newStatus) {
-      setDraggedApplicationId(null);
+    if (!application || application.status === newStatus) {
       return;
     }
 
     try {
       setError("");
+      setUpdatingApplicationId(applicationId);
 
-      await api.patch(`/applications/${draggedApplicationId}/status`, {
+      await api.patch(`/applications/${applicationId}/status`, {
         status: newStatus,
       });
 
       setApplications((currentApplications) =>
         currentApplications.map((item) =>
-          item.id === draggedApplicationId
+          item.id === applicationId
             ? {
                 ...item,
                 status: newStatus,
@@ -99,16 +96,22 @@ function Pipeline() {
     } catch {
       setError("Unable to update application status");
     } finally {
-      setDraggedApplicationId(null);
+      setUpdatingApplicationId(null);
     }
+  };
+
+  const handleDrop = async (newStatus: string) => {
+    if (draggedApplicationId === null) {
+      return;
+    }
+
+    await updateApplicationStatus(draggedApplicationId, newStatus);
+
+    setDraggedApplicationId(null);
   };
 
   if (loading) {
     return <p>Loading pipeline...</p>;
-  }
-
-  if (error) {
-    return <p>{error}</p>;
   }
 
   return (
@@ -120,6 +123,8 @@ function Pipeline() {
             <p>Track applications through each stage.</p>
           </div>
         </div>
+
+        {error && <div className="pipeline-error">{error}</div>}
 
         <div className="pipeline-board">
           {statuses.map((status) => {
@@ -180,6 +185,34 @@ function Pipeline() {
                         {application.location && (
                           <span>{application.location}</span>
                         )}
+
+                        <div className="pipeline-mobile-status">
+                          <label htmlFor={`status-${application.id}`}>
+                            Move to
+                          </label>
+
+                          <select
+                            id={`status-${application.id}`}
+                            value={application.status}
+                            disabled={updatingApplicationId === application.id}
+                            onChange={(event) =>
+                              updateApplicationStatus(
+                                application.id,
+                                event.target.value,
+                              )
+                            }
+                          >
+                            {statuses.map((statusOption) => (
+                              <option key={statusOption} value={statusOption}>
+                                {formatStatus(statusOption)}
+                              </option>
+                            ))}
+                          </select>
+
+                          {updatingApplicationId === application.id && (
+                            <small>Updating...</small>
+                          )}
+                        </div>
                       </div>
                     ))
                   )}

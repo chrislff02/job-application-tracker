@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../api/api";
+import "./Auth.css";
 
 function Login() {
   const navigate = useNavigate();
@@ -34,44 +35,57 @@ function Login() {
   };
 
   return (
-    <div>
-      <h1>Login</h1>
-
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label htmlFor="email">Email</label>
-
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            required
-          />
+    <div className="auth-page">
+      <div className="auth-card">
+        <div className="auth-header">
+          <h1>Welcome back</h1>
+          <p>Log in to continue tracking your job search.</p>
         </div>
 
-        <div>
-          <label htmlFor="password">Password</label>
+        <form className="auth-form" onSubmit={handleSubmit}>
+          <div className="auth-field">
+            <label htmlFor="email">Email</label>
 
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            required
-          />
-        </div>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              disabled={loading}
+              autoComplete="email"
+              required
+            />
+          </div>
 
-        {error && <p>{error}</p>}
+          <div className="auth-field">
+            <label htmlFor="password">Password</label>
 
-        <button type="submit" disabled={loading}>
-          {loading ? "Logging in..." : "Login"}
-        </button>
-      </form>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              disabled={loading}
+              autoComplete="current-password"
+              required
+            />
+          </div>
 
-      <p>
-        Don't have an account? <Link to="/register">Register</Link>
-      </p>
+          {error && <div className="auth-error">{error}</div>}
+
+          <button
+            className="auth-submit-button"
+            type="submit"
+            disabled={loading}
+          >
+            {loading ? "Logging in..." : "Login"}
+          </button>
+        </form>
+
+        <p className="auth-switch">
+          Don't have an account? <Link to="/register">Register</Link>
+        </p>
+      </div>
     </div>
   );
 }

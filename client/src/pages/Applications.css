@@ -1,8 +1,9 @@
 .applications-page {
   min-height: 100vh;
+  padding: 40px;
+
   background: #111827;
   color: #f9fafb;
-  padding: 40px;
 }
 
 .applications-container {
@@ -10,10 +11,13 @@
   margin: 0 auto;
 }
 
+/* Header */
+
 .applications-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+
   margin-bottom: 28px;
 }
 
@@ -24,10 +28,13 @@
 
 .add-application-button {
   padding: 10px 16px;
+
   border: none;
   border-radius: 8px;
+
   background: #2563eb;
   color: white;
+
   font-weight: 600;
   cursor: pointer;
 }
@@ -36,173 +43,20 @@
   background: #1d4ed8;
 }
 
+/* Application form */
+
 .add-application-form {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 12px;
+
   margin-bottom: 24px;
   padding: 20px;
+
   border: 1px solid #374151;
   border-radius: 12px;
+
   background: #1f2937;
-}
-
-.add-application-form input,
-.add-application-form select {
-  padding: 10px 12px;
-  border: 1px solid #374151;
-  border-radius: 8px;
-  background: #111827;
-  color: #f9fafb;
-}
-
-.form-actions {
-  grid-column: 1 / -1;
-  display: flex;
-  gap: 10px;
-}
-
-.form-actions button {
-  padding: 10px 16px;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
-}
-
-.form-actions button:first-child {
-  background: #2563eb;
-  color: white;
-}
-
-.form-actions button:last-child {
-  background: #374151;
-  color: white;
-}
-
-.application-controls {
-  display: grid;
-  grid-template-columns: 2fr repeat(4, 1fr);
-  gap: 12px;
-  margin-bottom: 24px;
-}
-
-.application-controls input,
-.application-controls select {
-  padding: 10px 12px;
-  border: 1px solid #374151;
-  border-radius: 8px;
-  background: #1f2937;
-  color: #f9fafb;
-}
-
-.applications-table-wrapper {
-  overflow-x: auto;
-  border: 1px solid #374151;
-  border-radius: 12px;
-}
-
-.applications-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: #1f2937;
-}
-
-.applications-table th,
-.applications-table td {
-  padding: 14px 16px;
-  text-align: left;
-  border-bottom: 1px solid #374151;
-}
-
-.applications-table th {
-  color: #9ca3af;
-  font-size: 0.9rem;
-}
-
-.applications-table tbody tr:hover {
-  background: #273449;
-}
-
-.applications-table tbody tr:last-child td {
-  border-bottom: none;
-}
-
-.status-badge {
-  display: inline-block;
-  padding: 4px 8px;
-  border-radius: 999px;
-  background: #374151;
-  font-size: 0.8rem;
-}
-
-.empty-state {
-  padding: 24px;
-  text-align: center;
-  color: #9ca3af;
-}
-
-@media (max-width: 900px) {
-  .application-controls {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .add-application-form {
-    grid-template-columns: 1fr;
-  }
-
-  .form-actions {
-    grid-column: 1;
-  }
-}
-
-@media (max-width: 600px) {
-  .applications-page {
-    padding: 20px;
-  }
-
-  .applications-header {
-    align-items: flex-start;
-    gap: 16px;
-    flex-direction: column;
-  }
-
-  .application-controls {
-    grid-template-columns: 1fr;
-  }
-}
-
-.table-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.table-actions button {
-  padding: 7px 10px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 600;
-}
-
-.table-actions button:first-child {
-  background: #2563eb;
-  color: white;
-}
-
-.table-actions button:last-child {
-  background: #dc2626;
-  color: white;
-}
-
-.applications-table a {
-  color: #60a5fa;
-  text-decoration: none;
-  font-weight: 600;
-}
-
-.applications-table a:hover {
-  text-decoration: underline;
 }
 
 .form-field {
@@ -221,35 +75,298 @@
   grid-column: 1 / -1;
 }
 
+.add-application-form input,
+.add-application-form select,
 .add-application-form textarea {
+  padding: 10px 12px;
+
+  border: 1px solid #374151;
+  border-radius: 8px;
+
   background: #111827;
   color: #f9fafb;
-  border: 1px solid #374151;
 }
 
 .add-application-form textarea {
   min-height: 100px;
+  resize: vertical;
 }
+
+.form-actions {
+  grid-column: 1 / -1;
+
+  display: flex;
+  gap: 10px;
+}
+
+.form-actions button {
+  padding: 10px 16px;
+
+  border: none;
+  border-radius: 8px;
+
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.form-actions button:first-child {
+  background: #2563eb;
+  color: white;
+}
+
+.form-actions button:last-child {
+  background: #374151;
+  color: white;
+}
+
+/* Search and filters */
+
+.application-controls {
+  display: grid;
+  grid-template-columns: 2fr repeat(4, 1fr);
+  gap: 12px;
+
+  margin-bottom: 24px;
+}
+
+.application-controls input,
+.application-controls select {
+  min-width: 0;
+  padding: 10px 12px;
+
+  border: 1px solid #374151;
+  border-radius: 8px;
+
+  background: #1f2937;
+  color: #f9fafb;
+}
+
+/* Desktop table */
+
+.applications-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+
+  border: 1px solid #374151;
+  border-radius: 12px;
+
+  -webkit-overflow-scrolling: touch;
+}
+
+.applications-table {
+  width: 100%;
+
+  border-collapse: collapse;
+
+  background: #1f2937;
+}
+
+.applications-table th,
+.applications-table td {
+  padding: 14px 16px;
+
+  border-bottom: 1px solid #374151;
+
+  text-align: left;
+}
+
+.applications-table th {
+  color: #9ca3af;
+  font-size: 0.9rem;
+}
+
+.applications-table tbody tr:hover {
+  background: #273449;
+}
+
+.applications-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.applications-table a {
+  color: #60a5fa;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.applications-table a:hover {
+  text-decoration: underline;
+}
+
+/* Status */
+
+.status-badge {
+  display: inline-block;
+
+  padding: 4px 8px;
+
+  border-radius: 999px;
+
+  background: #374151;
+
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+/* Desktop table actions */
+
+.table-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.table-actions button {
+  padding: 7px 10px;
+
+  border: none;
+  border-radius: 6px;
+
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.table-actions button:first-child {
+  background: #2563eb;
+  color: white;
+}
+
+.table-actions button:last-child {
+  background: #dc2626;
+  color: white;
+}
+
+/* Mobile application cards */
+
+.mobile-applications-list {
+  display: none;
+}
+
+.mobile-application-card {
+  padding: 16px;
+
+  border: 1px solid #374151;
+  border-radius: 12px;
+
+  background: #1f2937;
+}
+
+.mobile-application-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+
+  margin-bottom: 16px;
+}
+
+.mobile-application-card-header > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  min-width: 0;
+}
+
+.mobile-application-company,
+.mobile-application-position {
+  text-decoration: none;
+}
+
+.mobile-application-company {
+  color: #60a5fa;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.mobile-application-position {
+  color: #cbd5e1;
+  font-size: 0.95rem;
+}
+
+.mobile-application-company:hover,
+.mobile-application-position:hover {
+  text-decoration: underline;
+}
+
+.mobile-application-details {
+  display: grid;
+  gap: 10px;
+
+  padding-top: 14px;
+
+  border-top: 1px solid #374151;
+}
+
+.mobile-detail-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.mobile-detail-label {
+  color: #9ca3af;
+  font-weight: 600;
+}
+
+.mobile-detail-row span:last-child {
+  color: #f9fafb;
+  text-align: right;
+}
+
+.mobile-application-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+
+  margin-top: 16px;
+}
+
+.mobile-application-actions button {
+  padding: 10px;
+
+  border: none;
+  border-radius: 8px;
+
+  color: white;
+
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.mobile-application-actions button:first-child {
+  background: #2563eb;
+}
+
+.mobile-application-actions button:last-child {
+  background: #dc2626;
+}
+
+/* Pagination */
 
 .pagination {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 18px;
+
   margin-top: 24px;
 }
 
 .pagination span {
   color: #9ca3af;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .pagination button {
   padding: 9px 16px;
+
   border: none;
   border-radius: 8px;
+
   background: #2563eb;
   color: white;
+
   cursor: pointer;
   font-weight: 600;
 }
@@ -261,8 +378,11 @@
 .pagination button:disabled {
   background: #374151;
   color: #6b7280;
+
   cursor: not-allowed;
 }
+
+/* Loading and empty states */
 
 .applications-state {
   display: flex;
@@ -270,37 +390,48 @@
   justify-content: center;
   align-items: center;
   gap: 8px;
+
   min-height: 180px;
   padding: 32px;
+
   text-align: center;
 }
 
 .applications-state h3 {
   margin: 0;
+
   color: #f9fafb;
+
   font-size: 1.15rem;
 }
 
 .applications-state p {
   margin: 0;
+
   color: #9ca3af;
 }
 
 .applications-error {
   margin-bottom: 20px;
   padding: 12px 16px;
+
   border: 1px solid #7f1d1d;
   border-radius: 8px;
+
   background: rgba(127, 29, 29, 0.2);
   color: #fca5a5;
 }
 
+/* Loading spinner */
+
 .loading-spinner {
   width: 28px;
   height: 28px;
+
   border: 3px solid #374151;
   border-top-color: #60a5fa;
   border-radius: 50%;
+
   animation: applications-spin 0.8s linear infinite;
 }
 
@@ -310,8 +441,11 @@
   }
 }
 
+/* Disabled states */
+
 .form-actions button:disabled,
-.table-actions button:disabled {
+.table-actions button:disabled,
+.mobile-application-actions button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
@@ -321,4 +455,95 @@
 .add-application-form textarea:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+}
+
+/* Tablet */
+
+@media (max-width: 900px) {
+  .application-controls {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .add-application-form {
+    grid-template-columns: 1fr;
+  }
+
+  .form-field-full,
+  .form-actions {
+    grid-column: 1;
+  }
+
+  .applications-table {
+    min-width: 900px;
+  }
+}
+
+/* Mobile */
+
+@media (max-width: 600px) {
+  .applications-page {
+    padding: 20px 16px;
+  }
+
+  .applications-header {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .applications-header h1 {
+    font-size: 1.7rem;
+  }
+
+  .add-application-button {
+    width: 100%;
+  }
+
+  .application-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .add-application-form {
+    padding: 16px;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .form-actions button {
+    width: 100%;
+  }
+
+  .applications-table {
+    display: none;
+  }
+
+  .mobile-applications-list {
+    display: grid;
+    gap: 14px;
+  }
+
+  .applications-table-wrapper {
+    overflow: visible;
+    border: none;
+    border-radius: 0;
+  }
+
+  .pagination {
+    gap: 10px;
+  }
+
+  .pagination button {
+    padding: 8px 12px;
+  }
+
+  .pagination span {
+    font-size: 0.9rem;
+  }
+
+  .applications-state {
+    min-height: 150px;
+    padding: 24px 16px;
+  }
 }

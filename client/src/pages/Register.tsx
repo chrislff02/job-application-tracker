@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import api from "../api/api";
+import "./Auth.css";
 
 function Register() {
   const navigate = useNavigate();
@@ -34,56 +35,71 @@ function Register() {
   };
 
   return (
-    <div>
-      <h1>Register</h1>
-
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label htmlFor="name">Name</label>
-
-          <input
-            id="name"
-            type="text"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-            required
-          />
+    <div className="auth-page">
+      <div className="auth-card">
+        <div className="auth-header">
+          <h1>Create your account</h1>
+          <p>Start organizing your job applications in one place.</p>
         </div>
 
-        <div>
-          <label htmlFor="email">Email</label>
+        <form className="auth-form" onSubmit={handleSubmit}>
+          <div className="auth-field">
+            <label htmlFor="name">Name</label>
 
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            required
-          />
-        </div>
+            <input
+              id="name"
+              type="text"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              disabled={loading}
+              autoComplete="name"
+              required
+            />
+          </div>
 
-        <div>
-          <label htmlFor="password">Password</label>
+          <div className="auth-field">
+            <label htmlFor="email">Email</label>
 
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            required
-          />
-        </div>
+            <input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              disabled={loading}
+              autoComplete="email"
+              required
+            />
+          </div>
 
-        {error && <p>{error}</p>}
+          <div className="auth-field">
+            <label htmlFor="password">Password</label>
 
-        <button type="submit" disabled={loading}>
-          {loading ? "Creating account..." : "Register"}
-        </button>
-      </form>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              disabled={loading}
+              autoComplete="new-password"
+              required
+            />
+          </div>
 
-      <p>
-        Already have an account? <Link to="/login">Login</Link>
-      </p>
+          {error && <div className="auth-error">{error}</div>}
+
+          <button
+            className="auth-submit-button"
+            type="submit"
+            disabled={loading}
+          >
+            {loading ? "Creating account..." : "Register"}
+          </button>
+        </form>
+
+        <p className="auth-switch">
+          Already have an account? <Link to="/login">Login</Link>
+        </p>
+      </div>
     </div>
   );
 }

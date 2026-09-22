@@ -277,6 +277,16 @@ function Applications() {
       .replace(/\b\w/g, (letter) => letter.toUpperCase());
   };
 
+  const formatAppliedDate = (appliedDate: string | null) => {
+    if (!appliedDate) {
+      return "—";
+    }
+
+    return new Date(appliedDate).toLocaleDateString("en-US", {
+      timeZone: "UTC",
+    });
+  };
+
   return (
     <div className="applications-page">
       <div className="applications-container">
@@ -422,83 +432,150 @@ function Applications() {
               </p>
             </div>
           ) : (
-            <table className="applications-table">
-              <thead>
-                <tr>
-                  <th>Company</th>
-                  <th>Position</th>
-                  <th>Status</th>
-                  <th>Applied Date</th>
-                  <th>Location</th>
-                  <th>Salary</th>
-                  <th>Source</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
+            <>
+              <table className="applications-table">
+                <thead>
+                  <tr>
+                    <th>Company</th>
+                    <th>Position</th>
+                    <th>Status</th>
+                    <th>Applied Date</th>
+                    <th>Location</th>
+                    <th>Salary</th>
+                    <th>Source</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
 
-              <tbody>
+                <tbody>
+                  {applications.map((application) => (
+                    <tr key={application.id}>
+                      <td>
+                        <Link to={`/applications/${application.id}`}>
+                          {application.company}
+                        </Link>
+                      </td>
+
+                      <td>
+                        <Link to={`/applications/${application.id}`}>
+                          {application.position}
+                        </Link>
+                      </td>
+
+                      <td>
+                        <span className="status-badge">
+                          {formatStatus(application.status)}
+                        </span>
+                      </td>
+
+                      <td>{formatAppliedDate(application.appliedDate)}</td>
+
+                      <td>{application.location || "—"}</td>
+                      <td>{application.salary || "—"}</td>
+                      <td>{application.source || "—"}</td>
+
+                      <td>
+                        <div className="table-actions">
+                          <button
+                            type="button"
+                            disabled={deletingApplicationId === application.id}
+                            onClick={() => startEditing(application)}
+                          >
+                            Edit
+                          </button>
+
+                          <button
+                            type="button"
+                            disabled={deletingApplicationId === application.id}
+                            onClick={() =>
+                              handleDeleteApplication(application.id)
+                            }
+                          >
+                            {deletingApplicationId === application.id
+                              ? "Deleting..."
+                              : "Delete"}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              <div className="mobile-applications-list">
                 {applications.map((application) => (
-                  <tr key={application.id}>
-                    <td>
-                      <Link to={`/applications/${application.id}`}>
-                        {application.company}
-                      </Link>
-                    </td>
+                  <div className="mobile-application-card" key={application.id}>
+                    <div className="mobile-application-card-header">
+                      <div>
+                        <Link
+                          className="mobile-application-company"
+                          to={`/applications/${application.id}`}
+                        >
+                          {application.company}
+                        </Link>
 
-                    <td>
-                      <Link to={`/applications/${application.id}`}>
-                        {application.position}
-                      </Link>
-                    </td>
+                        <Link
+                          className="mobile-application-position"
+                          to={`/applications/${application.id}`}
+                        >
+                          {application.position}
+                        </Link>
+                      </div>
 
-                    <td>
                       <span className="status-badge">
                         {formatStatus(application.status)}
                       </span>
-                    </td>
+                    </div>
 
-                    <td>
-                      {application.appliedDate
-                        ? new Date(application.appliedDate).toLocaleDateString(
-                            "en-US",
-                            {
-                              timeZone: "UTC",
-                            },
-                          )
-                        : "—"}
-                    </td>
-
-                    <td>{application.location || "—"}</td>
-                    <td>{application.salary || "—"}</td>
-                    <td>{application.source || "—"}</td>
-
-                    <td>
-                      <div className="table-actions">
-                        <button
-                          type="button"
-                          disabled={deletingApplicationId === application.id}
-                          onClick={() => startEditing(application)}
-                        >
-                          Edit
-                        </button>
-
-                        <button
-                          type="button"
-                          disabled={deletingApplicationId === application.id}
-                          onClick={() =>
-                            handleDeleteApplication(application.id)
-                          }
-                        >
-                          {deletingApplicationId === application.id
-                            ? "Deleting..."
-                            : "Delete"}
-                        </button>
+                    <div className="mobile-application-details">
+                      <div className="mobile-detail-row">
+                        <span className="mobile-detail-label">
+                          Applied Date
+                        </span>
+                        <span>
+                          {formatAppliedDate(application.appliedDate)}
+                        </span>
                       </div>
-                    </td>
-                  </tr>
+
+                      <div className="mobile-detail-row">
+                        <span className="mobile-detail-label">Location</span>
+                        <span>{application.location || "—"}</span>
+                      </div>
+
+                      <div className="mobile-detail-row">
+                        <span className="mobile-detail-label">Salary</span>
+                        <span>{application.salary || "—"}</span>
+                      </div>
+
+                      <div className="mobile-detail-row">
+                        <span className="mobile-detail-label">Source</span>
+                        <span>{application.source || "—"}</span>
+                      </div>
+                    </div>
+
+                    <div className="mobile-application-actions">
+                      <button
+                        type="button"
+                        disabled={deletingApplicationId === application.id}
+                        onClick={() => startEditing(application)}
+                      >
+                        Edit
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={deletingApplicationId === application.id}
+                        onClick={() => handleDeleteApplication(application.id)}
+                      >
+                        {deletingApplicationId === application.id
+                          ? "Deleting..."
+                          : "Delete"}
+                      </button>
+                    </div>
+                  </div>
                 ))}
-              </tbody>
-            </table>
+              </div>
+            </>
           )}
         </div>
 

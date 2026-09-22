@@ -11,6 +11,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+
 import api from "../api/api";
 import "./Analytics.css";
 
