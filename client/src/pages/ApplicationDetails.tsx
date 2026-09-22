@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import type { FormEvent } from "react";
 import { Link, useParams } from "react-router-dom";
+
 import api from "../api/api";
 import "./ApplicationDetails.css";
 
@@ -46,14 +48,22 @@ function ApplicationDetails() {
   const [pageError, setPageError] = useState("");
   const [actionError, setActionError] = useState("");
 
-  // Add interview
+  // Track interview mutations separately so buttons can give
+  // feedback & duplicate submissions can be prevented
+  const [addingInterview, setAddingInterview] = useState(false);
+  const [updatingInterview, setUpdatingInterview] = useState(false);
+  const [deletingInterviewId, setDeletingInterviewId] = useState<number | null>(
+    null,
+  );
+
+  // Add interview form state
   const [showInterviewForm, setShowInterviewForm] = useState(false);
   const [interviewType, setInterviewType] = useState("");
   const [interviewDateTime, setInterviewDateTime] = useState("");
   const [interviewer, setInterviewer] = useState("");
   const [interviewNotes, setInterviewNotes] = useState("");
 
-  // Edit interview
+  // Edit interview form state
   const [editingInterview, setEditingInterview] = useState<Interview | null>(
     null,
   );
@@ -63,21 +73,24 @@ function ApplicationDetails() {
   const [editInterviewer, setEditInterviewer] = useState("");
   const [editNotes, setEditNotes] = useState("");
 
-  const fetchInterviews = async () => {
+  const fetchInterviews = useCallback(async () => {
     const response = await api.get(`/applications/${id}/interviews`);
-    setInterviews(response.data.interviews);
-  };
+    return response.data.interviews as Interview[];
+  }, [id]);
 
-  const fetchActivities = async () => {
+  const fetchActivities = useCallback(async () => {
     const response = await api.get(`/applications/${id}/activities`);
-    setActivities(response.data.activities);
-  };
+    return response.data.activities as ApplicationActivity[];
+  }, [id]);
 
   useEffect(() => {
+    let cancelled = false;
+
     const fetchApplicationDetails = async () => {
       try {
         setPageError("");
 
+        // These requests are independent, so load them in parallel
         const [applicationResponse, interviewResponse, activityResponse] =
           await Promise.all([
             api.get(`/applications/${id}`),
@@ -85,35 +98,56 @@ function ApplicationDetails() {
             api.get(`/applications/${id}/activities`),
           ]);
 
+        if (cancelled) {
+          return;
+        }
+
         setApplication(applicationResponse.data.application);
         setInterviews(interviewResponse.data.interviews);
         setActivities(activityResponse.data.activities);
       } catch {
-        setPageError("Unable to load application");
+        if (!cancelled) {
+          setPageError("Unable to load application");
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
 
-    fetchApplicationDetails();
+    void fetchApplicationDetails();
+
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
-  const handleAddInterview = async (
-    event: React.FormEvent<HTMLFormElement>,
-  ) => {
+  const refreshInterviewData = async () => {
+    const [updatedInterviews, updatedActivities] = await Promise.all([
+      fetchInterviews(),
+      fetchActivities(),
+    ]);
+
+    setInterviews(updatedInterviews);
+    setActivities(updatedActivities);
+  };
+
+  const handleAddInterview = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     try {
       setActionError("");
+      setAddingInterview(true);
 
       await api.post(`/applications/${id}/interviews`, {
-        type: interviewType,
+        type: interviewType.trim(),
         dateTime: interviewDateTime,
-        interviewer: interviewer || null,
-        notes: interviewNotes || null,
+        interviewer: interviewer.trim() || null,
+        notes: interviewNotes.trim() || null,
       });
 
-      await Promise.all([fetchInterviews(), fetchActivities()]);
+      await refreshInterviewData();
 
       setInterviewType("");
       setInterviewDateTime("");
@@ -122,6 +156,8 @@ function ApplicationDetails() {
       setShowInterviewForm(false);
     } catch {
       setActionError("Unable to add interview");
+    } finally {
+      setAddingInterview(false);
     }
   };
 
@@ -137,9 +173,7 @@ function ApplicationDetails() {
     setActionError("");
   };
 
-  const handleUpdateInterview = async (
-    event: React.FormEvent<HTMLFormElement>,
-  ) => {
+  const handleUpdateInterview = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (!editingInterview) {
@@ -148,19 +182,22 @@ function ApplicationDetails() {
 
     try {
       setActionError("");
+      setUpdatingInterview(true);
 
       await api.put(`/interviews/${editingInterview.id}`, {
-        type: editType,
+        type: editType.trim(),
         dateTime: editDateTime,
-        interviewer: editInterviewer || null,
-        notes: editNotes || null,
+        interviewer: editInterviewer.trim() || null,
+        notes: editNotes.trim() || null,
       });
 
       setEditingInterview(null);
 
-      await Promise.all([fetchInterviews(), fetchActivities()]);
+      await refreshInterviewData();
     } catch {
       setActionError("Unable to update interview");
+    } finally {
+      setUpdatingInterview(false);
     }
   };
 
@@ -175,12 +212,15 @@ function ApplicationDetails() {
 
     try {
       setActionError("");
+      setDeletingInterviewId(interviewId);
 
       await api.delete(`/interviews/${interviewId}`);
 
-      await Promise.all([fetchInterviews(), fetchActivities()]);
+      await refreshInterviewData();
     } catch {
       setActionError("Unable to delete interview");
+    } finally {
+      setDeletingInterviewId(null);
     }
   };
 
@@ -189,6 +229,16 @@ function ApplicationDetails() {
       .replaceAll("_", " ")
       .toLowerCase()
       .replace(/\b\w/g, (letter) => letter.toUpperCase());
+  };
+
+  const formatAppliedDate = (date: string | null) => {
+    if (!date) {
+      return "—";
+    }
+
+    return new Date(date).toLocaleDateString("en-US", {
+      timeZone: "UTC",
+    });
   };
 
   if (loading) {
@@ -225,16 +275,7 @@ function ApplicationDetails() {
           <div className="details-grid">
             <div>
               <span>Applied Date</span>
-              <strong>
-                {application.appliedDate
-                  ? new Date(application.appliedDate).toLocaleDateString(
-                      "en-US",
-                      {
-                        timeZone: "UTC",
-                      },
-                    )
-                  : "—"}
-              </strong>
+              <strong>{formatAppliedDate(application.appliedDate)}</strong>
             </div>
 
             <div>
@@ -317,6 +358,7 @@ function ApplicationDetails() {
                 placeholder="Interview type"
                 value={interviewType}
                 onChange={(event) => setInterviewType(event.target.value)}
+                disabled={addingInterview}
                 required
               />
 
@@ -324,6 +366,7 @@ function ApplicationDetails() {
                 type="datetime-local"
                 value={interviewDateTime}
                 onChange={(event) => setInterviewDateTime(event.target.value)}
+                disabled={addingInterview}
                 required
               />
 
@@ -332,19 +375,25 @@ function ApplicationDetails() {
                 placeholder="Interviewer"
                 value={interviewer}
                 onChange={(event) => setInterviewer(event.target.value)}
+                disabled={addingInterview}
               />
 
               <textarea
                 placeholder="Interview notes"
                 value={interviewNotes}
                 onChange={(event) => setInterviewNotes(event.target.value)}
+                disabled={addingInterview}
+                rows={4}
               />
 
               <div className="interview-form-actions">
-                <button type="submit">Save Interview</button>
+                <button type="submit" disabled={addingInterview}>
+                  {addingInterview ? "Saving Interview..." : "Save Interview"}
+                </button>
 
                 <button
                   type="button"
+                  disabled={addingInterview}
                   onClick={() => {
                     setShowInterviewForm(false);
                     setActionError("");
@@ -362,6 +411,7 @@ function ApplicationDetails() {
                 type="text"
                 value={editType}
                 onChange={(event) => setEditType(event.target.value)}
+                disabled={updatingInterview}
                 required
               />
 
@@ -369,6 +419,7 @@ function ApplicationDetails() {
                 type="datetime-local"
                 value={editDateTime}
                 onChange={(event) => setEditDateTime(event.target.value)}
+                disabled={updatingInterview}
                 required
               />
 
@@ -377,19 +428,25 @@ function ApplicationDetails() {
                 placeholder="Interviewer"
                 value={editInterviewer}
                 onChange={(event) => setEditInterviewer(event.target.value)}
+                disabled={updatingInterview}
               />
 
               <textarea
                 placeholder="Interview notes"
                 value={editNotes}
                 onChange={(event) => setEditNotes(event.target.value)}
+                disabled={updatingInterview}
+                rows={4}
               />
 
               <div className="interview-form-actions">
-                <button type="submit">Save Changes</button>
+                <button type="submit" disabled={updatingInterview}>
+                  {updatingInterview ? "Saving Changes..." : "Save Changes"}
+                </button>
 
                 <button
                   type="button"
+                  disabled={updatingInterview}
                   onClick={() => {
                     setEditingInterview(null);
                     setActionError("");
@@ -410,13 +467,13 @@ function ApplicationDetails() {
                   <div className="interview-card-header">
                     <div>
                       <h3>{interview.type}</h3>
-
                       <p>{new Date(interview.dateTime).toLocaleString()}</p>
                     </div>
 
                     <div className="interview-actions">
                       <button
                         type="button"
+                        disabled={deletingInterviewId === interview.id}
                         onClick={() => startEditingInterview(interview)}
                       >
                         Edit
@@ -424,9 +481,12 @@ function ApplicationDetails() {
 
                       <button
                         type="button"
+                        disabled={deletingInterviewId === interview.id}
                         onClick={() => handleDeleteInterview(interview.id)}
                       >
-                        Delete
+                        {deletingInterviewId === interview.id
+                          ? "Deleting..."
+                          : "Delete"}
                       </button>
                     </div>
                   </div>

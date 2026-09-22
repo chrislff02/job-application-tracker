@@ -1,5 +1,6 @@
 .applications-page {
   min-height: 100vh;
+
   padding: 40px;
 
   background: #111827;
@@ -12,7 +13,6 @@
 }
 
 /* Header */
-
 .applications-header {
   display: flex;
   justify-content: space-between;
@@ -33,10 +33,9 @@
   border-radius: 8px;
 
   background: #2563eb;
-  color: white;
+  color: #ffffff;
 
   font-weight: 600;
-  cursor: pointer;
 }
 
 .add-application-button:hover {
@@ -44,7 +43,6 @@
 }
 
 /* Application form */
-
 .add-application-form {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -87,6 +85,13 @@
   color: #f9fafb;
 }
 
+.add-application-form input:focus,
+.add-application-form select:focus,
+.add-application-form textarea:focus {
+  outline: none;
+  border-color: #60a5fa;
+}
+
 .add-application-form textarea {
   min-height: 100px;
   resize: vertical;
@@ -105,22 +110,28 @@
   border: none;
   border-radius: 8px;
 
-  cursor: pointer;
   font-weight: 600;
 }
 
 .form-actions button:first-child {
   background: #2563eb;
-  color: white;
+  color: #ffffff;
+}
+
+.form-actions button:first-child:hover:not(:disabled) {
+  background: #1d4ed8;
 }
 
 .form-actions button:last-child {
   background: #374151;
-  color: white;
+  color: #ffffff;
+}
+
+.form-actions button:last-child:hover:not(:disabled) {
+  background: #4b5563;
 }
 
 /* Search and filters */
-
 .application-controls {
   display: grid;
   grid-template-columns: 2fr repeat(4, 1fr);
@@ -132,6 +143,7 @@
 .application-controls input,
 .application-controls select {
   min-width: 0;
+
   padding: 10px 12px;
 
   border: 1px solid #374151;
@@ -141,10 +153,16 @@
   color: #f9fafb;
 }
 
-/* Desktop table */
+.application-controls input:focus,
+.application-controls select:focus {
+  outline: none;
+  border-color: #60a5fa;
+}
 
+/* Desktop table */
 .applications-table-wrapper {
   width: 100%;
+
   overflow-x: auto;
 
   border: 1px solid #374151;
@@ -194,7 +212,6 @@
 }
 
 /* Status */
-
 .status-badge {
   display: inline-block;
 
@@ -209,7 +226,6 @@
 }
 
 /* Desktop table actions */
-
 .table-actions {
   display: flex;
   gap: 8px;
@@ -221,22 +237,28 @@
   border: none;
   border-radius: 6px;
 
-  cursor: pointer;
   font-weight: 600;
 }
 
 .table-actions button:first-child {
   background: #2563eb;
-  color: white;
+  color: #ffffff;
+}
+
+.table-actions button:first-child:hover:not(:disabled) {
+  background: #1d4ed8;
 }
 
 .table-actions button:last-child {
   background: #dc2626;
-  color: white;
+  color: #ffffff;
+}
+
+.table-actions button:last-child:hover:not(:disabled) {
+  background: #b91c1c;
 }
 
 /* Mobile application cards */
-
 .mobile-applications-list {
   display: none;
 }
@@ -327,9 +349,7 @@
   border: none;
   border-radius: 8px;
 
-  color: white;
-
-  cursor: pointer;
+  color: #ffffff;
   font-weight: 600;
 }
 
@@ -337,12 +357,19 @@
   background: #2563eb;
 }
 
+.mobile-application-actions button:first-child:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
 .mobile-application-actions button:last-child {
   background: #dc2626;
 }
 
-/* Pagination */
+.mobile-application-actions button:last-child:hover:not(:disabled) {
+  background: #b91c1c;
+}
 
+/* Pagination */
 .pagination {
   display: flex;
   justify-content: center;
@@ -365,9 +392,8 @@
   border-radius: 8px;
 
   background: #2563eb;
-  color: white;
+  color: #ffffff;
 
-  cursor: pointer;
   font-weight: 600;
 }
 
@@ -378,12 +404,9 @@
 .pagination button:disabled {
   background: #374151;
   color: #6b7280;
-
-  cursor: not-allowed;
 }
 
 /* Loading and empty states */
-
 .applications-state {
   display: flex;
   flex-direction: column;
@@ -401,13 +424,11 @@
   margin: 0;
 
   color: #f9fafb;
-
   font-size: 1.15rem;
 }
 
 .applications-state p {
   margin: 0;
-
   color: #9ca3af;
 }
 
@@ -423,7 +444,6 @@
 }
 
 /* Loading spinner */
-
 .loading-spinner {
   width: 28px;
   height: 28px;
@@ -442,23 +462,19 @@
 }
 
 /* Disabled states */
-
 .form-actions button:disabled,
 .table-actions button:disabled,
 .mobile-application-actions button:disabled {
   opacity: 0.6;
-  cursor: not-allowed;
 }
 
 .add-application-form input:disabled,
 .add-application-form select:disabled,
 .add-application-form textarea:disabled {
   opacity: 0.7;
-  cursor: not-allowed;
 }
 
 /* Tablet */
-
 @media (max-width: 900px) {
   .application-controls {
     grid-template-columns: 1fr 1fr;
@@ -479,7 +495,6 @@
 }
 
 /* Mobile */
-
 @media (max-width: 600px) {
   .applications-page {
     padding: 20px 16px;
@@ -526,6 +541,7 @@
 
   .applications-table-wrapper {
     overflow: visible;
+
     border: none;
     border-radius: 0;
   }

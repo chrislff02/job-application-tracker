@@ -5,6 +5,8 @@ function AppLayout() {
   const navigate = useNavigate();
 
   const handleLogout = () => {
+    // Remove stored JWT so protected routes no longer
+    // consider the user authenticated
     localStorage.removeItem("token");
     navigate("/login");
   };

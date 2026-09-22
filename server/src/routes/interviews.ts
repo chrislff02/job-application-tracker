@@ -4,7 +4,47 @@ import { authenticateToken, AuthRequest } from "../middleware/auth";
 
 const router = Router();
 
-// CREATE INTERVIEW FOR AN APPLICATION
+// Convert optional text fields to clean database values
+// Empty strings = "null", while undefined = "leave unchanged"
+function normalizeOptionalString(value: unknown) {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmedValue = value.trim();
+
+  return trimmedValue || null;
+}
+
+// Validate & convert a required date/time value
+function parseRequiredDate(value: unknown) {
+  if (typeof value !== "string" || !value.trim()) {
+    return {
+      valid: false,
+      value: null,
+    };
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return {
+      valid: false,
+      value: null,
+    };
+  }
+
+  return {
+    valid: true,
+    value: date,
+  };
+}
+
+// Create Interview For An App
 router.post(
   "/applications/:applicationId/interviews",
   authenticateToken,
@@ -19,12 +59,14 @@ router.post(
         });
       }
 
-      if (Number.isNaN(applicationId)) {
+      if (!Number.isInteger(applicationId) || applicationId < 1) {
         return res.status(400).json({
           message: "Invalid application id",
         });
       }
 
+      // Verify the app belongs to authenticated user
+      // before letting interview info to be added
       const application = await prisma.application.findFirst({
         where: {
           id: applicationId,
@@ -40,28 +82,42 @@ router.post(
 
       const { type, dateTime, interviewer, notes } = req.body;
 
-      if (!type || !dateTime) {
+      if (typeof type !== "string" || !type.trim()) {
         return res.status(400).json({
-          message: "Interview type and date/time are required",
+          message: "Interview type is required",
         });
       }
 
-      const interview = await prisma.interview.create({
-        data: {
-          applicationId,
-          type,
-          dateTime: new Date(dateTime),
-          interviewer: interviewer || null,
-          notes: notes || null,
-        },
-      });
+      const parsedDateTime = parseRequiredDate(dateTime);
 
-      await prisma.applicationActivity.create({
-        data: {
-          applicationId,
-          type: "INTERVIEW_CREATED",
-          description: `${interview.type} added`,
-        },
+      if (!parsedDateTime.valid || !parsedDateTime.value) {
+        return res.status(400).json({
+          message: "A valid interview date/time is required",
+        });
+      }
+
+      // Create interview & its activity record together so
+      // timeline can't become inconsistent if one fails
+      const interview = await prisma.$transaction(async (tx) => {
+        const createdInterview = await tx.interview.create({
+          data: {
+            applicationId,
+            type: type.trim(),
+            dateTime: parsedDateTime.value,
+            interviewer: normalizeOptionalString(interviewer) ?? null,
+            notes: normalizeOptionalString(notes) ?? null,
+          },
+        });
+
+        await tx.applicationActivity.create({
+          data: {
+            applicationId,
+            type: "INTERVIEW_CREATED",
+            description: `${createdInterview.type} added`,
+          },
+        });
+
+        return createdInterview;
       });
 
       return res.status(201).json({
@@ -69,7 +125,7 @@ router.post(
         interview,
       });
     } catch (error) {
-      console.error(error);
+      console.error("Create interview error:", error);
 
       return res.status(500).json({
         message: "Something went wrong",
@@ -78,7 +134,7 @@ router.post(
   },
 );
 
-// GET ALL INTERVIEWS FOR ONE APPLICATION
+// Get All Interviews For One App
 router.get(
   "/applications/:applicationId/interviews",
   authenticateToken,
@@ -93,12 +149,13 @@ router.get(
         });
       }
 
-      if (Number.isNaN(applicationId)) {
+      if (!Number.isInteger(applicationId) || applicationId < 1) {
         return res.status(400).json({
           message: "Invalid application id",
         });
       }
 
+      // Verify ownership before showing interview info
       const application = await prisma.application.findFirst({
         where: {
           id: applicationId,
@@ -125,7 +182,7 @@ router.get(
         interviews,
       });
     } catch (error) {
-      console.error(error);
+      console.error("Get interviews error:", error);
 
       return res.status(500).json({
         message: "Something went wrong",
@@ -134,7 +191,7 @@ router.get(
   },
 );
 
-// UPDATE INTERVIEW
+// Update Interview
 router.put(
   "/interviews/:id",
   authenticateToken,
@@ -149,12 +206,14 @@ router.put(
         });
       }
 
-      if (Number.isNaN(interviewId)) {
+      if (!Number.isInteger(interviewId) || interviewId < 1) {
         return res.status(400).json({
           message: "Invalid interview id",
         });
       }
 
+      // Scope lookup through the parent application so users
+      // can only update interviews attached to their own apps
       const existingInterview = await prisma.interview.findFirst({
         where: {
           id: interviewId,
@@ -172,27 +231,43 @@ router.put(
 
       const { type, dateTime, interviewer, notes } = req.body;
 
-      const interview = await prisma.interview.update({
-        where: {
-          id: interviewId,
-        },
-        data: {
-          type,
-          dateTime:
-            dateTime === undefined
-              ? undefined
-              : new Date(dateTime),
-          interviewer,
-          notes,
-        },
-      });
+      if (typeof type !== "string" || !type.trim()) {
+        return res.status(400).json({
+          message: "Interview type is required",
+        });
+      }
 
-      await prisma.applicationActivity.create({
-        data: {
-          applicationId: interview.applicationId,
-          type: "INTERVIEW_UPDATED",
-          description: `${interview.type} updated`,
-        },
+      const parsedDateTime = parseRequiredDate(dateTime);
+
+      if (!parsedDateTime.valid || !parsedDateTime.value) {
+        return res.status(400).json({
+          message: "A valid interview date/time is required",
+        });
+      }
+
+      // Update interview & activity timeline atomically
+      const interview = await prisma.$transaction(async (tx) => {
+        const updatedInterview = await tx.interview.update({
+          where: {
+            id: interviewId,
+          },
+          data: {
+            type: type.trim(),
+            dateTime: parsedDateTime.value,
+            interviewer: normalizeOptionalString(interviewer),
+            notes: normalizeOptionalString(notes),
+          },
+        });
+
+        await tx.applicationActivity.create({
+          data: {
+            applicationId: updatedInterview.applicationId,
+            type: "INTERVIEW_UPDATED",
+            description: `${updatedInterview.type} updated`,
+          },
+        });
+
+        return updatedInterview;
       });
 
       return res.json({
@@ -200,7 +275,7 @@ router.put(
         interview,
       });
     } catch (error) {
-      console.error(error);
+      console.error("Update interview error:", error);
 
       return res.status(500).json({
         message: "Something went wrong",
@@ -209,7 +284,7 @@ router.put(
   },
 );
 
-// DELETE INTERVIEW
+// Delete Interview
 router.delete(
   "/interviews/:id",
   authenticateToken,
@@ -224,12 +299,13 @@ router.delete(
         });
       }
 
-      if (Number.isNaN(interviewId)) {
+      if (!Number.isInteger(interviewId) || interviewId < 1) {
         return res.status(400).json({
           message: "Invalid interview id",
         });
       }
 
+      // Verify ownership before allowing the interview to be deleted
       const existingInterview = await prisma.interview.findFirst({
         where: {
           id: interviewId,
@@ -245,25 +321,29 @@ router.delete(
         });
       }
 
-      await prisma.interview.delete({
-        where: {
-          id: interviewId,
-        },
-      });
+      // Delete interview & record the deletion in the app
+      // timeline as one transaction
+      await prisma.$transaction(async (tx) => {
+        await tx.interview.delete({
+          where: {
+            id: interviewId,
+          },
+        });
 
-      await prisma.applicationActivity.create({
-        data: {
-          applicationId: existingInterview.applicationId,
-          type: "INTERVIEW_DELETED",
-          description: `${existingInterview.type} deleted`,
-        },
+        await tx.applicationActivity.create({
+          data: {
+            applicationId: existingInterview.applicationId,
+            type: "INTERVIEW_DELETED",
+            description: `${existingInterview.type} deleted`,
+          },
+        });
       });
 
       return res.json({
         message: "Interview deleted successfully",
       });
     } catch (error) {
-      console.error(error);
+      console.error("Delete interview error:", error);
 
       return res.status(500).json({
         message: "Something went wrong",

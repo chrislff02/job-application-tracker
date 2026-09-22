@@ -1,16 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+
 import api from "../api/api";
 import "./Pipeline.css";
-
-interface Application {
-  id: number;
-  company: string;
-  position: string;
-  status: string;
-  appliedDate: string | null;
-  location: string | null;
-}
 
 const statuses = [
   "SAVED",
@@ -22,9 +14,32 @@ const statuses = [
   "OFFER",
   "REJECTED",
   "WITHDRAWN",
-];
+] as const;
 
-const formatStatus = (status: string) => {
+type ApplicationStatus = (typeof statuses)[number];
+
+interface Application {
+  id: number;
+  company: string;
+  position: string;
+  status: ApplicationStatus;
+  appliedDate: string | null;
+  location: string | null;
+}
+
+interface ApplicationsResponse {
+  applications: Application[];
+  pagination: {
+    page: number;
+    limit: number;
+    totalApplications: number;
+    totalPages: number;
+    hasPreviousPage: boolean;
+    hasNextPage: boolean;
+  };
+}
+
+const formatStatus = (status: ApplicationStatus) => {
   return status
     .toLowerCase()
     .split("_")
@@ -37,7 +52,8 @@ function Pipeline() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const [dragOverStatus, setDragOverStatus] = useState<string | null>(null);
+  const [dragOverStatus, setDragOverStatus] =
+    useState<ApplicationStatus | null>(null);
 
   const [draggedApplicationId, setDraggedApplicationId] = useState<
     number | null
@@ -48,26 +64,76 @@ function Pipeline() {
   >(null);
 
   useEffect(() => {
-    const fetchApplications = async () => {
+    let cancelled = false;
+
+    const fetchAllApplications = async () => {
       try {
         setError("");
 
-        const response = await api.get("/applications");
+        /*
+         * The normal apps endpoint is paginated
+         * The Pipeline needs every app so each status column
+         * reps the user's complete app pipeline
+         */
+        const firstResponse = await api.get<ApplicationsResponse>(
+          "/applications",
+          {
+            params: {
+              page: 1,
+              limit: 50,
+            },
+          },
+        );
 
-        setApplications(response.data.applications);
+        const allApplications = [...firstResponse.data.applications];
+
+        const totalPages = firstResponse.data.pagination.totalPages;
+
+        // If x < 50 apps exist, fetch remaining pages
+        // in parallel & combine them into 1 pipeline
+        if (totalPages > 1) {
+          const remainingRequests = Array.from(
+            { length: totalPages - 1 },
+            (_, index) =>
+              api.get<ApplicationsResponse>("/applications", {
+                params: {
+                  page: index + 2,
+                  limit: 50,
+                },
+              }),
+          );
+
+          const remainingResponses = await Promise.all(remainingRequests);
+
+          for (const response of remainingResponses) {
+            allApplications.push(...response.data.applications);
+          }
+        }
+
+        if (!cancelled) {
+          setApplications(allApplications);
+        }
       } catch {
-        setError("Unable to load pipeline");
+        if (!cancelled) {
+          setError("Unable to load pipeline");
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
 
-    fetchApplications();
+    void fetchAllApplications();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const updateApplicationStatus = async (
     applicationId: number,
-    newStatus: string,
+    newStatus: ApplicationStatus,
   ) => {
     const application = applications.find((item) => item.id === applicationId);
 
@@ -83,6 +149,8 @@ function Pipeline() {
         status: newStatus,
       });
 
+      // Update local state after backend confirms the change
+      // so the card immediately moves into its new pipeline column
       setApplications((currentApplications) =>
         currentApplications.map((item) =>
           item.id === applicationId
@@ -100,7 +168,7 @@ function Pipeline() {
     }
   };
 
-  const handleDrop = async (newStatus: string) => {
+  const handleDrop = async (newStatus: ApplicationStatus) => {
     if (draggedApplicationId === null) {
       return;
     }
@@ -144,7 +212,7 @@ function Pipeline() {
                 }}
                 onDragLeave={() => setDragOverStatus(null)}
                 onDrop={() => {
-                  handleDrop(status);
+                  void handleDrop(status);
                   setDragOverStatus(null);
                 }}
               >
@@ -165,7 +233,7 @@ function Pipeline() {
                             : ""
                         }`}
                         key={application.id}
-                        draggable
+                        draggable={updatingApplicationId !== application.id}
                         onDragStart={() =>
                           setDraggedApplicationId(application.id)
                         }
@@ -186,6 +254,10 @@ function Pipeline() {
                           <span>{application.location}</span>
                         )}
 
+                        {/*
+                         * Native drag and drop is unreliable on touch
+                         * devices, so mobile users get a status selector
+                         */}
                         <div className="pipeline-mobile-status">
                           <label htmlFor={`status-${application.id}`}>
                             Move to
@@ -196,9 +268,9 @@ function Pipeline() {
                             value={application.status}
                             disabled={updatingApplicationId === application.id}
                             onChange={(event) =>
-                              updateApplicationStatus(
+                              void updateApplicationStatus(
                                 application.id,
-                                event.target.value,
+                                event.target.value as ApplicationStatus,
                               )
                             }
                           >

@@ -1,3 +1,5 @@
+import type { FormEvent } from "react";
+
 interface ApplicationFormValues {
   company: string;
   position: string;
@@ -15,7 +17,7 @@ interface ApplicationFormValues {
 interface ApplicationFormProps {
   values: ApplicationFormValues;
   onChange: (field: keyof ApplicationFormValues, value: string) => void;
-  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
+  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   onCancel: () => void;
   submitLabel: string;
   isSubmitting: boolean;
@@ -39,6 +41,7 @@ function ApplicationForm({
           value={values.company}
           onChange={(event) => onChange("company", event.target.value)}
           disabled={isSubmitting}
+          autoComplete="organization"
           required
         />
       </div>
@@ -94,6 +97,7 @@ function ApplicationForm({
           value={values.location}
           onChange={(event) => onChange("location", event.target.value)}
           disabled={isSubmitting}
+          autoComplete="address-level2"
         />
       </div>
 
@@ -105,6 +109,7 @@ function ApplicationForm({
           value={values.salary}
           onChange={(event) => onChange("salary", event.target.value)}
           disabled={isSubmitting}
+          placeholder="e.g. $90,000–$110,000"
         />
       </div>
 
@@ -134,6 +139,7 @@ function ApplicationForm({
           value={values.jobUrl}
           onChange={(event) => onChange("jobUrl", event.target.value)}
           disabled={isSubmitting}
+          placeholder="https://..."
         />
       </div>
 
@@ -145,6 +151,7 @@ function ApplicationForm({
           value={values.recruiterName}
           onChange={(event) => onChange("recruiterName", event.target.value)}
           disabled={isSubmitting}
+          autoComplete="name"
         />
       </div>
 
@@ -156,6 +163,7 @@ function ApplicationForm({
           value={values.recruiterEmail}
           onChange={(event) => onChange("recruiterEmail", event.target.value)}
           disabled={isSubmitting}
+          autoComplete="email"
         />
       </div>
 
@@ -166,6 +174,8 @@ function ApplicationForm({
           value={values.notes}
           onChange={(event) => onChange("notes", event.target.value)}
           disabled={isSubmitting}
+          rows={5}
+          placeholder="Add any notes about the application..."
         />
       </div>
 

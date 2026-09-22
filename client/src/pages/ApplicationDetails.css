@@ -12,7 +12,6 @@
 }
 
 /* Back link */
-
 .back-link {
   display: inline-block;
 
@@ -28,7 +27,6 @@
 }
 
 /* Main application card */
-
 .application-details-card {
   padding: 28px;
 
@@ -83,7 +81,6 @@
 }
 
 /* Application details */
-
 .details-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -151,7 +148,6 @@
 }
 
 /* Interviews */
-
 .interviews-section {
   margin-top: 36px;
 }
@@ -171,7 +167,6 @@
 
 .interviews-header p {
   margin: 5px 0 0;
-
   color: #9ca3af;
 }
 
@@ -184,13 +179,12 @@
   border-radius: 8px;
 
   background: #2563eb;
-  color: white;
+  color: #ffffff;
 
-  cursor: pointer;
   font-weight: 600;
 }
 
-.add-interview-button:hover {
+.add-interview-button:hover:not(:disabled) {
   background: #1d4ed8;
 }
 
@@ -206,7 +200,6 @@
 }
 
 /* Interview forms */
-
 .interview-form {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -224,7 +217,6 @@
 .interview-form input,
 .interview-form textarea {
   width: 100%;
-  box-sizing: border-box;
 
   padding: 10px 12px;
 
@@ -239,6 +231,11 @@
 .interview-form textarea:focus {
   outline: none;
   border-color: #60a5fa;
+}
+
+.interview-form input:disabled,
+.interview-form textarea:disabled {
+  opacity: 0.7;
 }
 
 .interview-form textarea {
@@ -259,30 +256,32 @@
   border: none;
   border-radius: 8px;
 
-  cursor: pointer;
   font-weight: 600;
 }
 
 .interview-form-actions button:first-child {
   background: #2563eb;
-  color: white;
+  color: #ffffff;
 }
 
-.interview-form-actions button:first-child:hover {
+.interview-form-actions button:first-child:hover:not(:disabled) {
   background: #1d4ed8;
 }
 
 .interview-form-actions button:last-child {
   background: #374151;
-  color: white;
+  color: #ffffff;
 }
 
-.interview-form-actions button:last-child:hover {
+.interview-form-actions button:last-child:hover:not(:disabled) {
   background: #4b5563;
 }
 
-/* Interview list */
+.interview-form-actions button:disabled {
+  opacity: 0.6;
+}
 
+/* Interview list */
 .interview-list {
   display: grid;
   gap: 16px;
@@ -344,26 +343,29 @@
   border: none;
   border-radius: 6px;
 
-  cursor: pointer;
   font-weight: 600;
 }
 
 .interview-actions button:first-child {
   background: #2563eb;
-  color: white;
+  color: #ffffff;
 }
 
-.interview-actions button:first-child:hover {
+.interview-actions button:first-child:hover:not(:disabled) {
   background: #1d4ed8;
 }
 
 .interview-actions button:last-child {
   background: #dc2626;
-  color: white;
+  color: #ffffff;
 }
 
-.interview-actions button:last-child:hover {
+.interview-actions button:last-child:hover:not(:disabled) {
   background: #b91c1c;
+}
+
+.interview-actions button:disabled {
+  opacity: 0.6;
 }
 
 .no-interviews {
@@ -379,7 +381,6 @@
 }
 
 /* Activity */
-
 .activity-section {
   margin-top: 36px;
 }
@@ -394,13 +395,11 @@
 
 .activity-header p {
   margin: 5px 0 0;
-
   color: #9ca3af;
 }
 
 .activity-list {
   position: relative;
-
   padding-left: 28px;
 }
 
@@ -408,7 +407,6 @@
   content: "";
 
   position: absolute;
-
   top: 8px;
   bottom: 8px;
   left: 7px;
@@ -420,7 +418,6 @@
 
 .activity-item {
   position: relative;
-
   padding-bottom: 16px;
 }
 
@@ -430,9 +427,9 @@
 
 .activity-marker {
   position: absolute;
-
   left: -28px;
   top: 18px;
+  z-index: 1;
 
   width: 16px;
   height: 16px;
@@ -441,8 +438,6 @@
   border-radius: 50%;
 
   background: #111827;
-
-  z-index: 1;
 }
 
 .activity-content {
@@ -481,7 +476,6 @@
 }
 
 /* Tablet */
-
 @media (max-width: 800px) {
   .details-page {
     padding: 28px 24px;
@@ -501,7 +495,6 @@
 }
 
 /* Mobile */
-
 @media (max-width: 600px) {
   .details-page {
     padding: 20px 16px;

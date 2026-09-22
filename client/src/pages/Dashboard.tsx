@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
+
 import api from "../api/api";
 import "./Dashboard.css";
 
@@ -39,8 +40,6 @@ interface DashboardOverview {
 }
 
 function Dashboard() {
-  const navigate = useNavigate();
-
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [overview, setOverview] = useState<DashboardOverview | null>(null);
 
@@ -48,31 +47,42 @@ function Dashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
+
     const fetchDashboard = async () => {
       try {
         setError("");
 
+        // Dashboard stats & overview data are independent
+        // so load both requests in parallel
         const [statsResponse, overviewResponse] = await Promise.all([
           api.get("/dashboard/stats"),
           api.get("/dashboard/overview"),
         ]);
 
+        if (cancelled) {
+          return;
+        }
+
         setStats(statsResponse.data);
         setOverview(overviewResponse.data);
       } catch {
-        setError("Unable to load dashboard");
+        if (!cancelled) {
+          setError("Unable to load dashboard");
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
 
-    fetchDashboard();
-  }, []);
+    void fetchDashboard();
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    navigate("/login");
-  };
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const formatStatus = (status: string) => {
     return status
@@ -108,12 +118,12 @@ function Dashboard() {
           </div>
 
           <div className="stat-card">
-            <span>Applications This Week</span>
+            <span>Added This Week</span>
             <strong>{stats.applicationsThisWeek}</strong>
           </div>
 
           <div className="stat-card">
-            <span>Interviews</span>
+            <span>In Interview Stages</span>
             <strong>{stats.interviews}</strong>
           </div>
 
@@ -138,7 +148,7 @@ function Dashboard() {
             <div className="dashboard-section-header">
               <div>
                 <h3>Recent Applications</h3>
-                <p>Your latest job applications.</p>
+                <p>Your latest tracked applications.</p>
               </div>
 
               <Link to="/applications">View All</Link>
@@ -194,6 +204,7 @@ function Dashboard() {
                   >
                     <div>
                       <strong>{interview.type}</strong>
+
                       <span>
                         {interview.application.company} ·{" "}
                         {interview.application.position}

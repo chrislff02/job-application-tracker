@@ -7,7 +7,88 @@ const router = Router();
 
 const validStatuses = Object.values(ApplicationStatus);
 
-// CREATE APPLICATION
+const allowedSortFields = [
+  "company",
+  "position",
+  "appliedDate",
+  "createdAt",
+  "updatedAt",
+];
+
+// Convert optional text fields into clean database values
+// Empty strings = null, undefined = "leave unchanged"
+function normalizeOptionalString(value: unknown) {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (typeof value !== "string") {
+    return null;
+  }
+
+  const trimmedValue = value.trim();
+
+  return trimmedValue || null;
+}
+
+// Parse optional dates & reject invalid date strings
+function parseOptionalDate(value: unknown) {
+  if (value === undefined) {
+    return {
+      valid: true,
+      value: undefined,
+    };
+  }
+
+  if (value === null || value === "") {
+    return {
+      valid: true,
+      value: null,
+    };
+  }
+
+  if (typeof value !== "string") {
+    return {
+      valid: false,
+      value: null,
+    };
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return {
+      valid: false,
+      value: null,
+    };
+  }
+
+  return {
+    valid: true,
+    value: date,
+  };
+}
+
+// Convert pagination query parameters to positive Ints
+function parsePositiveInteger(value: unknown, fallback: number, max?: number) {
+  if (typeof value !== "string") {
+    return fallback;
+  }
+
+  const parsedValue = Number.parseInt(value, 10);
+
+  if (!Number.isFinite(parsedValue) || parsedValue < 1) {
+    return fallback;
+  }
+
+  if (max !== undefined) {
+    return Math.min(parsedValue, max);
+  }
+
+  return parsedValue;
+}
+
+// Create App
 router.post("/", authenticateToken, async (req: AuthRequest, res) => {
   try {
     const userId = req.user?.userId;
@@ -32,41 +113,63 @@ router.post("/", authenticateToken, async (req: AuthRequest, res) => {
       recruiterEmail,
     } = req.body;
 
-    if (!company || !position) {
+    if (
+      typeof company !== "string" ||
+      typeof position !== "string" ||
+      !company.trim() ||
+      !position.trim()
+    ) {
       return res.status(400).json({
         message: "Company and position are required",
       });
     }
 
-    if (status && !validStatuses.includes(status)) {
+    if (
+      status !== undefined &&
+      !validStatuses.includes(status as ApplicationStatus)
+    ) {
       return res.status(400).json({
         message: "Invalid application status",
       });
     }
 
-    const application = await prisma.application.create({
-      data: {
-        userId,
-        company,
-        position,
-        status: status ?? ApplicationStatus.SAVED,
-        appliedDate: appliedDate ? new Date(appliedDate) : null,
-        location: location || null,
-        salary: salary || null,
-        source: source || null,
-        jobUrl: jobUrl || null,
-        notes: notes || null,
-        recruiterName: recruiterName || null,
-        recruiterEmail: recruiterEmail || null,
-      },
-    });
+    const parsedAppliedDate = parseOptionalDate(appliedDate);
 
-    await prisma.applicationActivity.create({
-      data: {
-        applicationId: application.id,
-        type: "APPLICATION_CREATED",
-        description: `Application created for ${application.company} - ${application.position}`,
-      },
+    if (!parsedAppliedDate.valid) {
+      return res.status(400).json({
+        message: "Invalid applied date",
+      });
+    }
+
+    // Create application & initial activity together
+    // If either operation fails = no change is committed
+    const application = await prisma.$transaction(async (tx) => {
+      const createdApplication = await tx.application.create({
+        data: {
+          userId,
+          company: company.trim(),
+          position: position.trim(),
+          status: status ?? ApplicationStatus.SAVED,
+          appliedDate: parsedAppliedDate.value ?? null,
+          location: normalizeOptionalString(location) ?? null,
+          salary: normalizeOptionalString(salary) ?? null,
+          source: normalizeOptionalString(source) ?? null,
+          jobUrl: normalizeOptionalString(jobUrl) ?? null,
+          notes: normalizeOptionalString(notes) ?? null,
+          recruiterName: normalizeOptionalString(recruiterName) ?? null,
+          recruiterEmail: normalizeOptionalString(recruiterEmail) ?? null,
+        },
+      });
+
+      await tx.applicationActivity.create({
+        data: {
+          applicationId: createdApplication.id,
+          type: "APPLICATION_CREATED",
+          description: `Application created for ${createdApplication.company} - ${createdApplication.position}`,
+        },
+      });
+
+      return createdApplication;
     });
 
     return res.status(201).json({
@@ -74,7 +177,7 @@ router.post("/", authenticateToken, async (req: AuthRequest, res) => {
       application,
     });
   } catch (error) {
-    console.error(error);
+    console.error("Create application error:", error);
 
     return res.status(500).json({
       message: "Something went wrong",
@@ -82,7 +185,7 @@ router.post("/", authenticateToken, async (req: AuthRequest, res) => {
   }
 });
 
-// GET ALL APPLICATIONS FOR LOGGED-IN USER
+// Get all applications for logged-in user
 router.get("/", authenticateToken, async (req: AuthRequest, res) => {
   try {
     const userId = req.user?.userId;
@@ -103,17 +206,15 @@ router.get("/", authenticateToken, async (req: AuthRequest, res) => {
       limit = "10",
     } = req.query;
 
-    const pageNumber = Math.max(1, Number(page) || 1);
-    const limitNumber = Math.min(50, Math.max(1, Number(limit) || 10));
+    // Limit page size to prevent a single request from retrieving
+    // an unneeded large # of application records
+    const pageNumber = parsePositiveInteger(page, 1);
+    const limitNumber = parsePositiveInteger(limit, 10, 50);
 
     const skip = (pageNumber - 1) * limitNumber;
 
     const sortField =
-      sort === "company" ||
-      sort === "position" ||
-      sort === "appliedDate" ||
-      sort === "createdAt" ||
-      sort === "updatedAt"
+      typeof sort === "string" && allowedSortFields.includes(sort)
         ? sort
         : "createdAt";
 
@@ -129,6 +230,12 @@ router.get("/", authenticateToken, async (req: AuthRequest, res) => {
       });
     }
 
+    const trimmedSearch = typeof search === "string" ? search.trim() : "";
+
+    const trimmedSource = typeof source === "string" ? source.trim() : "";
+
+    // Every query = scoped to authenticated user so one user
+    // can never get another user's applications
     const where = {
       userId,
 
@@ -138,39 +245,39 @@ router.get("/", authenticateToken, async (req: AuthRequest, res) => {
           }
         : {}),
 
-      ...(source && typeof source === "string"
+      ...(trimmedSource
         ? {
             source: {
-              equals: source,
+              equals: trimmedSource,
               mode: "insensitive" as const,
             },
           }
         : {}),
 
-      ...(search && typeof search === "string"
+      ...(trimmedSearch
         ? {
             OR: [
               {
                 company: {
-                  contains: search,
+                  contains: trimmedSearch,
                   mode: "insensitive" as const,
                 },
               },
               {
                 position: {
-                  contains: search,
+                  contains: trimmedSearch,
                   mode: "insensitive" as const,
                 },
               },
               {
                 location: {
-                  contains: search,
+                  contains: trimmedSearch,
                   mode: "insensitive" as const,
                 },
               },
               {
                 source: {
-                  contains: search,
+                  contains: trimmedSearch,
                   mode: "insensitive" as const,
                 },
               },
@@ -179,6 +286,8 @@ router.get("/", authenticateToken, async (req: AuthRequest, res) => {
         : {}),
     };
 
+    // Fetch current page & total count in parallel because
+    // neither database query depends on the other
     const [applications, totalApplications] = await Promise.all([
       prisma.application.findMany({
         where,
@@ -208,7 +317,7 @@ router.get("/", authenticateToken, async (req: AuthRequest, res) => {
       },
     });
   } catch (error) {
-    console.error(error);
+    console.error("Get applications error:", error);
 
     return res.status(500).json({
       message: "Something went wrong",
@@ -216,7 +325,7 @@ router.get("/", authenticateToken, async (req: AuthRequest, res) => {
   }
 });
 
-// GET ONE APPLICATION
+// Get One App
 router.get("/:id", authenticateToken, async (req: AuthRequest, res) => {
   try {
     const userId = req.user?.userId;
@@ -228,12 +337,14 @@ router.get("/:id", authenticateToken, async (req: AuthRequest, res) => {
       });
     }
 
-    if (Number.isNaN(applicationId)) {
+    if (!Number.isInteger(applicationId) || applicationId < 1) {
       return res.status(400).json({
         message: "Invalid application id",
       });
     }
 
+    // Include userId in lookup so users can only access
+    // applications that belong to them
     const application = await prisma.application.findFirst({
       where: {
         id: applicationId,
@@ -251,7 +362,7 @@ router.get("/:id", authenticateToken, async (req: AuthRequest, res) => {
       application,
     });
   } catch (error) {
-    console.error(error);
+    console.error("Get application error:", error);
 
     return res.status(500).json({
       message: "Something went wrong",
@@ -259,7 +370,7 @@ router.get("/:id", authenticateToken, async (req: AuthRequest, res) => {
   }
 });
 
-// UPDATE APPLICATION
+// Update App
 router.put("/:id", authenticateToken, async (req: AuthRequest, res) => {
   try {
     const userId = req.user?.userId;
@@ -271,7 +382,7 @@ router.put("/:id", authenticateToken, async (req: AuthRequest, res) => {
       });
     }
 
-    if (Number.isNaN(applicationId)) {
+    if (!Number.isInteger(applicationId) || applicationId < 1) {
       return res.status(400).json({
         message: "Invalid application id",
       });
@@ -304,62 +415,86 @@ router.put("/:id", authenticateToken, async (req: AuthRequest, res) => {
       recruiterEmail,
     } = req.body;
 
-    if (status && !validStatuses.includes(status)) {
+    // This route reps a full app edit, so the 2
+    // required application fields must remain populated
+    if (
+      typeof company !== "string" ||
+      typeof position !== "string" ||
+      !company.trim() ||
+      !position.trim()
+    ) {
+      return res.status(400).json({
+        message: "Company and position are required",
+      });
+    }
+
+    if (
+      status !== undefined &&
+      !validStatuses.includes(status as ApplicationStatus)
+    ) {
       return res.status(400).json({
         message: "Invalid application status",
       });
     }
 
-    const application = await prisma.application.update({
-      where: {
-        id: applicationId,
-      },
-      data: {
-        company,
-        position,
-        status,
-        appliedDate:
-          appliedDate === undefined
-            ? undefined
-            : appliedDate
-              ? new Date(appliedDate)
-              : null,
-        location,
-        salary,
-        source,
-        jobUrl,
-        notes,
-        recruiterName,
-        recruiterEmail,
-      },
-    });
+    const parsedAppliedDate = parseOptionalDate(appliedDate);
 
-    // Log normal application edit
-    await prisma.applicationActivity.create({
-      data: {
-        applicationId: application.id,
-        type: "APPLICATION_UPDATED",
-        description: "Application details updated",
-      },
-    });
-
-    // If the edit also changed the status, log that separately
-    if (status && existingApplication.status !== application.status) {
-      await prisma.applicationActivity.create({
-        data: {
-          applicationId: application.id,
-          type: "STATUS_CHANGED",
-          description: `Status changed from ${existingApplication.status} to ${application.status}`,
-        },
+    if (!parsedAppliedDate.valid) {
+      return res.status(400).json({
+        message: "Invalid applied date",
       });
     }
+
+    // Keep app update & its activity records atomic
+    const application = await prisma.$transaction(async (tx) => {
+      const updatedApplication = await tx.application.update({
+        where: {
+          id: applicationId,
+        },
+        data: {
+          company: company.trim(),
+          position: position.trim(),
+          status,
+          appliedDate: parsedAppliedDate.value,
+          location: normalizeOptionalString(location),
+          salary: normalizeOptionalString(salary),
+          source: normalizeOptionalString(source),
+          jobUrl: normalizeOptionalString(jobUrl),
+          notes: normalizeOptionalString(notes),
+          recruiterName: normalizeOptionalString(recruiterName),
+          recruiterEmail: normalizeOptionalString(recruiterEmail),
+        },
+      });
+
+      await tx.applicationActivity.create({
+        data: {
+          applicationId: updatedApplication.id,
+          type: "APPLICATION_UPDATED",
+          description: "Application details updated",
+        },
+      });
+
+      // Record status changes separately so activity timeline
+      // shows movement through the application pipeline
+      if (status && existingApplication.status !== updatedApplication.status) {
+        await tx.applicationActivity.create({
+          data: {
+            applicationId: updatedApplication.id,
+            type: "STATUS_CHANGED",
+            description: `Status changed from ${existingApplication.status} to ${updatedApplication.status}`,
+          },
+        });
+      }
+
+      return updatedApplication;
+    });
 
     return res.json({
       message: "Application updated successfully",
       application,
     });
   } catch (error) {
-    console.error(error);
+    console.error("Update application error:", error);
 
     return res.status(500).json({
       message: "Something went wrong",
@@ -367,7 +502,7 @@ router.put("/:id", authenticateToken, async (req: AuthRequest, res) => {
   }
 });
 
-// DELETE APPLICATION
+// Delete App
 router.delete("/:id", authenticateToken, async (req: AuthRequest, res) => {
   try {
     const userId = req.user?.userId;
@@ -379,12 +514,14 @@ router.delete("/:id", authenticateToken, async (req: AuthRequest, res) => {
       });
     }
 
-    if (Number.isNaN(applicationId)) {
+    if (!Number.isInteger(applicationId) || applicationId < 1) {
       return res.status(400).json({
         message: "Invalid application id",
       });
     }
 
+    // Check ownership before deleting so users cannot delete
+    // apps that belong to another
     const existingApplication = await prisma.application.findFirst({
       where: {
         id: applicationId,
@@ -408,7 +545,7 @@ router.delete("/:id", authenticateToken, async (req: AuthRequest, res) => {
       message: "Application deleted successfully",
     });
   } catch (error) {
-    console.error(error);
+    console.error("Delete application error:", error);
 
     return res.status(500).json({
       message: "Something went wrong",
@@ -416,7 +553,7 @@ router.delete("/:id", authenticateToken, async (req: AuthRequest, res) => {
   }
 });
 
-// UPDATE APPLICATION STATUS
+// Update App Status
 router.patch(
   "/:id/status",
   authenticateToken,
@@ -432,13 +569,16 @@ router.patch(
         });
       }
 
-      if (Number.isNaN(applicationId)) {
+      if (!Number.isInteger(applicationId) || applicationId < 1) {
         return res.status(400).json({
           message: "Invalid application id",
         });
       }
 
-      if (!status || !validStatuses.includes(status)) {
+      if (
+        typeof status !== "string" ||
+        !validStatuses.includes(status as ApplicationStatus)
+      ) {
         return res.status(400).json({
           message: "Invalid application status",
         });
@@ -457,32 +597,37 @@ router.patch(
         });
       }
 
-      const application = await prisma.application.update({
-        where: {
-          id: applicationId,
-        },
-        data: {
-          status,
-        },
-      });
-
-      // Only record activity if the status actually changed
-      if (existingApplication.status !== application.status) {
-        await prisma.applicationActivity.create({
+      // Updating status & creating its activity entry should
+      // succeed/fail together
+      const application = await prisma.$transaction(async (tx) => {
+        const updatedApplication = await tx.application.update({
+          where: {
+            id: applicationId,
+          },
           data: {
-            applicationId: application.id,
-            type: "STATUS_CHANGED",
-            description: `Status changed from ${existingApplication.status} to ${application.status}`,
+            status: status as ApplicationStatus,
           },
         });
-      }
+
+        if (existingApplication.status !== updatedApplication.status) {
+          await tx.applicationActivity.create({
+            data: {
+              applicationId: updatedApplication.id,
+              type: "STATUS_CHANGED",
+              description: `Status changed from ${existingApplication.status} to ${updatedApplication.status}`,
+            },
+          });
+        }
+
+        return updatedApplication;
+      });
 
       return res.json({
         message: "Application status updated successfully",
         application,
       });
     } catch (error) {
-      console.error(error);
+      console.error("Update application status error:", error);
 
       return res.status(500).json({
         message: "Something went wrong",
@@ -491,7 +636,7 @@ router.patch(
   },
 );
 
-// GET APPLICATION ACTIVITY
+// Get App Activity
 router.get(
   "/:id/activities",
   authenticateToken,
@@ -506,12 +651,13 @@ router.get(
         });
       }
 
-      if (Number.isNaN(applicationId)) {
+      if (!Number.isInteger(applicationId) || applicationId < 1) {
         return res.status(400).json({
           message: "Invalid application id",
         });
       }
 
+      // Verify ownership before showing an app's timeline
       const application = await prisma.application.findFirst({
         where: {
           id: applicationId,
@@ -538,7 +684,7 @@ router.get(
         activities,
       });
     } catch (error) {
-      console.error(error);
+      console.error("Get application activity error:", error);
 
       return res.status(500).json({
         message: "Something went wrong",

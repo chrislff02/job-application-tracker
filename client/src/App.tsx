@@ -22,16 +22,14 @@ function App() {
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
           <Route path="/dashboard" element={<Dashboard />} />
-
           <Route path="/applications" element={<Applications />} />
-
           <Route path="/applications/:id" element={<ApplicationDetails />} />
-
           <Route path="/pipeline" element={<Pipeline />} />
-
           <Route path="/analytics" element={<Analytics />} />
         </Route>
       </Route>
+
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

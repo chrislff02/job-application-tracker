@@ -5,7 +5,31 @@ import { ApplicationStatus } from "../generated/prisma/client";
 
 const router = Router();
 
-// Stats
+const RESPONSE_STATUSES = new Set<ApplicationStatus>([
+  ApplicationStatus.ASSESSMENT,
+  ApplicationStatus.PHONE_SCREEN,
+  ApplicationStatus.INTERVIEW,
+  ApplicationStatus.FINAL_INTERVIEW,
+  ApplicationStatus.OFFER,
+  ApplicationStatus.REJECTED,
+]);
+
+const INTERVIEW_STATUSES = new Set<ApplicationStatus>([
+  ApplicationStatus.PHONE_SCREEN,
+  ApplicationStatus.INTERVIEW,
+  ApplicationStatus.FINAL_INTERVIEW,
+  ApplicationStatus.OFFER,
+]);
+
+function calculatePercentage(count: number, total: number) {
+  if (total === 0) {
+    return 0;
+  }
+
+  return Number(((count / total) * 100).toFixed(1));
+}
+
+// Dashboard Stats
 router.get("/stats", authenticateToken, async (req: AuthRequest, res) => {
   try {
     const userId = req.user?.userId;
@@ -16,14 +40,17 @@ router.get("/stats", authenticateToken, async (req: AuthRequest, res) => {
       });
     }
 
+    // Calculate Monday at midnight for current local server week
     const startOfWeek = new Date();
+
     startOfWeek.setHours(0, 0, 0, 0);
 
-    const day = startOfWeek.getDay();
-    const diffToMonday = day === 0 ? -6 : 1 - day;
+    const currentDay = startOfWeek.getDay();
+    const daysSinceMonday = currentDay === 0 ? 6 : currentDay - 1;
 
-    startOfWeek.setDate(startOfWeek.getDate() + diffToMonday);
+    startOfWeek.setDate(startOfWeek.getDate() - daysSinceMonday);
 
+    // These queries are independent, so run them in parallel
     const [
       totalApplications,
       applicationsThisWeek,
@@ -76,43 +103,25 @@ router.get("/stats", authenticateToken, async (req: AuthRequest, res) => {
       }),
     ]);
 
-    const responseStatuses = new Set<ApplicationStatus>([
-      ApplicationStatus.ASSESSMENT,
-      ApplicationStatus.PHONE_SCREEN,
-      ApplicationStatus.INTERVIEW,
-      ApplicationStatus.FINAL_INTERVIEW,
-      ApplicationStatus.OFFER,
-      ApplicationStatus.REJECTED,
-    ]);
-
-    const interviewStatuses = new Set<ApplicationStatus>([
-      ApplicationStatus.PHONE_SCREEN,
-      ApplicationStatus.INTERVIEW,
-      ApplicationStatus.FINAL_INTERVIEW,
-      ApplicationStatus.OFFER,
-    ]);
-
+    // These describe apps based on their current status
+    // rather than their complete status history
     const respondedApplications = applications.filter((application) =>
-      responseStatuses.has(application.status),
+      RESPONSE_STATUSES.has(application.status),
     ).length;
 
     const interviewApplications = applications.filter((application) =>
-      interviewStatuses.has(application.status),
+      INTERVIEW_STATUSES.has(application.status),
     ).length;
 
-    const responseRate =
-      totalApplications === 0
-        ? 0
-        : Number(
-            ((respondedApplications / totalApplications) * 100).toFixed(1),
-          );
+    const responseRate = calculatePercentage(
+      respondedApplications,
+      totalApplications,
+    );
 
-    const interviewConversionRate =
-      totalApplications === 0
-        ? 0
-        : Number(
-            ((interviewApplications / totalApplications) * 100).toFixed(1),
-          );
+    const interviewConversionRate = calculatePercentage(
+      interviewApplications,
+      totalApplications,
+    );
 
     return res.json({
       totalApplications,
@@ -123,7 +132,7 @@ router.get("/stats", authenticateToken, async (req: AuthRequest, res) => {
       interviewConversionRate,
     });
   } catch (error) {
-    console.error(error);
+    console.error("Get dashboard stats error:", error);
 
     return res.status(500).json({
       message: "Something went wrong",
@@ -131,7 +140,7 @@ router.get("/stats", authenticateToken, async (req: AuthRequest, res) => {
   }
 });
 
-// DASHBOARD OVERVIEW
+// Dashboard Overview
 router.get("/overview", authenticateToken, async (req: AuthRequest, res) => {
   try {
     const userId = req.user?.userId;
@@ -144,6 +153,8 @@ router.get("/overview", authenticateToken, async (req: AuthRequest, res) => {
 
     const now = new Date();
 
+    // Load the 2 dashboard sections together so that neither
+    // query depends on the result of the other
     const [recentApplications, upcomingInterviews] = await Promise.all([
       prisma.application.findMany({
         where: {
@@ -197,7 +208,7 @@ router.get("/overview", authenticateToken, async (req: AuthRequest, res) => {
       upcomingInterviews,
     });
   } catch (error) {
-    console.error(error);
+    console.error("Get dashboard overview error:", error);
 
     return res.status(500).json({
       message: "Something went wrong",
@@ -205,7 +216,7 @@ router.get("/overview", authenticateToken, async (req: AuthRequest, res) => {
   }
 });
 
-// ANALYTICS
+// Analytics
 router.get("/analytics", authenticateToken, async (req: AuthRequest, res) => {
   try {
     const userId = req.user?.userId;
@@ -234,7 +245,7 @@ router.get("/analytics", authenticateToken, async (req: AuthRequest, res) => {
 
     const totalApplications = applications.length;
 
-    // Status distribution
+    // Count how many apps currently belong to each status
     const statusCounts = new Map<ApplicationStatus, number>();
 
     for (const application of applications) {
@@ -251,7 +262,7 @@ router.get("/analytics", authenticateToken, async (req: AuthRequest, res) => {
       }),
     );
 
-    // Applications over time
+    // Group apps by date they were added to the tracker
     const applicationsByDate = new Map<string, number>();
 
     for (const application of applications) {
@@ -267,7 +278,8 @@ router.get("/analytics", authenticateToken, async (req: AuthRequest, res) => {
       }),
     );
 
-    // Application sources
+    // Group appss by source, Missing sources are displayed
+    // under "Unknown" instead of being excluded
     const sourceCounts = new Map<string, number>();
 
     for (const application of applications) {
@@ -283,16 +295,9 @@ router.get("/analytics", authenticateToken, async (req: AuthRequest, res) => {
       }),
     );
 
-    // Rates
-    const interviewStatuses = new Set<ApplicationStatus>([
-      ApplicationStatus.PHONE_SCREEN,
-      ApplicationStatus.INTERVIEW,
-      ApplicationStatus.FINAL_INTERVIEW,
-      ApplicationStatus.OFFER,
-    ]);
-
+    // These rates use each app's current status
     const interviewCount = applications.filter((application) =>
-      interviewStatuses.has(application.status),
+      INTERVIEW_STATUSES.has(application.status),
     ).length;
 
     const rejectionCount = applications.filter(
@@ -303,24 +308,24 @@ router.get("/analytics", authenticateToken, async (req: AuthRequest, res) => {
       (application) => application.status === ApplicationStatus.OFFER,
     ).length;
 
-    const interviewRate =
-      totalApplications === 0
-        ? 0
-        : Number(((interviewCount / totalApplications) * 100).toFixed(1));
+    const interviewRate = calculatePercentage(
+      interviewCount,
+      totalApplications,
+    );
 
-    const rejectionRate =
-      totalApplications === 0
-        ? 0
-        : Number(((rejectionCount / totalApplications) * 100).toFixed(1));
+    const rejectionRate = calculatePercentage(
+      rejectionCount,
+      totalApplications,
+    );
 
-    const offerRate =
-      totalApplications === 0
-        ? 0
-        : Number(((offerCount / totalApplications) * 100).toFixed(1));
+    const offerRate = calculatePercentage(offerCount, totalApplications);
 
-    // Average response time
-    // For now, this uses the time from appliedDate to the
-    // first recorded non-initial activity that looks like a response.
+    // Approximate response time using earliest relevant activity
+    // recorded after the app's applied date
+    //
+    // STATUS_CHANGED is a proxy for an employer response because
+    // activity records currently don't store destination status
+    // as a separate structured field
     const responseActivities = await prisma.applicationActivity.findMany({
       where: {
         application: {
@@ -339,6 +344,8 @@ router.get("/analytics", authenticateToken, async (req: AuthRequest, res) => {
       },
     });
 
+    // Keep only earliest possible response activity for
+    // each app
     const firstResponseByApplication = new Map<number, Date>();
 
     for (const activity of responseActivities) {
@@ -366,6 +373,8 @@ router.get("/analytics", authenticateToken, async (req: AuthRequest, res) => {
       const differenceMs =
         firstResponse.getTime() - application.appliedDate.getTime();
 
+      // Ignore impossible negative response times, could happen
+      // if app's applied date is edited after activity exists
       if (differenceMs >= 0) {
         responseTimesInDays.push(differenceMs / (1000 * 60 * 60 * 24));
       }
@@ -391,7 +400,7 @@ router.get("/analytics", authenticateToken, async (req: AuthRequest, res) => {
       averageResponseTimeDays,
     });
   } catch (error) {
-    console.error(error);
+    console.error("Get analytics error:", error);
 
     return res.status(500).json({
       message: "Something went wrong",

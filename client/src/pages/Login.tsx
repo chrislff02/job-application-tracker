@@ -1,6 +1,8 @@
+import axios from "axios";
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
+
 import api from "../api/api";
 import "./Auth.css";
 
@@ -20,15 +22,21 @@ function Login() {
 
     try {
       const response = await api.post("/auth/login", {
-        email,
+        email: email.trim().toLowerCase(),
         password,
       });
 
+      // Store JWT so authenticated API requests & protected
+      // routes can recognize the logged-in user
       localStorage.setItem("token", response.data.token);
 
       navigate("/dashboard");
-    } catch (error: any) {
-      setError(error.response?.data?.message || "Unable to log in");
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        setError(error.response?.data?.message || "Unable to log in");
+      } else {
+        setError("Unable to log in");
+      }
     } finally {
       setLoading(false);
     }

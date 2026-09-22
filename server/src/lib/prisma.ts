@@ -1,4 +1,5 @@
 import "dotenv/config";
+
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../generated/prisma/client";
 
@@ -8,6 +9,7 @@ if (!connectionString) {
   throw new Error("DATABASE_URL is not configured");
 }
 
+// Create PostgreSQL adapter using configured database connection string
 const adapter = new PrismaPg({
   connectionString,
 });

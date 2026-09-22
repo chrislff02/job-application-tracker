@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../api/api";
 import ApplicationForm from "../components/ApplicationForm";
@@ -72,35 +72,33 @@ function Applications() {
     hasNextPage: false,
   });
 
-  // Filters
+  // Search, filter & sorting controls
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [source, setSource] = useState("");
   const [sort, setSort] = useState("createdAt");
   const [order, setOrder] = useState("desc");
 
-  // Request states
+  // Track individual request states so buttons can provide
+  // feedback & prevent duplicate submissions
   const [addingApplication, setAddingApplication] = useState(false);
   const [updatingApplication, setUpdatingApplication] = useState(false);
   const [deletingApplicationId, setDeletingApplicationId] = useState<
     number | null
   >(null);
 
-  // Add application
+  // Add app form state
   const [showForm, setShowForm] = useState(false);
   const [addForm, setAddForm] = useState<ApplicationFormValues>(emptyForm);
 
-  // Edit application
+  // Edit app form state
   const [editingApplication, setEditingApplication] =
     useState<Application | null>(null);
 
   const [editForm, setEditForm] = useState<ApplicationFormValues>(emptyForm);
 
-  const fetchApplications = async (pageToFetch = page) => {
-    try {
-      setLoading(true);
-      setError("");
-
+  const fetchApplications = useCallback(
+    async (pageToFetch: number) => {
       const response = await api.get("/applications", {
         params: {
           search: search || undefined,
@@ -113,18 +111,73 @@ function Applications() {
         },
       });
 
-      setApplications(response.data.applications);
-      setPagination(response.data.pagination);
+      return response.data;
+    },
+    [search, status, source, sort, order],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadApplications = async () => {
+      try {
+        /*
+         * Yield once before changing state, keeps effect focused
+         * on synchronizing the component with the API rather than causing
+         * an immediate synchronous state update during the effect itself
+         */
+        await Promise.resolve();
+
+        if (cancelled) {
+          return;
+        }
+
+        setLoading(true);
+        setError("");
+
+        const data = await fetchApplications(page);
+
+        if (cancelled) {
+          return;
+        }
+
+        setApplications(data.applications);
+        setPagination(data.pagination);
+      } catch {
+        if (!cancelled) {
+          setError("Unable to load applications. Please try again.");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    void loadApplications();
+
+    // Ignore results from outdated request after dependencies change
+    // or component unmounts
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchApplications, page]);
+
+  const refreshApplications = async (pageToFetch: number) => {
+    try {
+      setLoading(true);
+      setError("");
+
+      const data = await fetchApplications(pageToFetch);
+
+      setApplications(data.applications);
+      setPagination(data.pagination);
     } catch {
       setError("Unable to load applications. Please try again.");
     } finally {
       setLoading(false);
     }
   };
-
-  useEffect(() => {
-    fetchApplications(page);
-  }, [search, status, source, sort, order, page]);
 
   const updateAddForm = (field: keyof ApplicationFormValues, value: string) => {
     setAddForm((currentForm) => ({
@@ -169,8 +222,11 @@ function Applications() {
       setAddForm(emptyForm);
       setShowForm(false);
 
-      setPage(1);
-      await fetchApplications(1);
+      if (page !== 1) {
+        setPage(1);
+      } else {
+        await refreshApplications(1);
+      }
     } catch {
       setError("Unable to add application");
     } finally {
@@ -230,7 +286,7 @@ function Applications() {
       setEditingApplication(null);
       setEditForm(emptyForm);
 
-      await fetchApplications(page);
+      await refreshApplications(page);
     } catch {
       setError("Unable to update application");
     } finally {
@@ -253,15 +309,16 @@ function Applications() {
 
       await api.delete(`/applications/${id}`);
 
+      /*
+       * If deleted record was final item on a later page,
+       * move back one page instead of leaving the user on an empty page
+       */
       const isLastItemOnPage = applications.length === 1 && page > 1;
 
       if (isLastItemOnPage) {
-        const previousPage = page - 1;
-
-        setPage(previousPage);
-        await fetchApplications(previousPage);
+        setPage(page - 1);
       } else {
-        await fetchApplications(page);
+        await refreshApplications(page);
       }
     } catch {
       setError("Unable to delete application");

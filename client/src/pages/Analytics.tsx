@@ -46,21 +46,33 @@ function Analytics() {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    let cancelled = false;
+
     const fetchAnalytics = async () => {
       try {
         setError("");
 
         const response = await api.get("/dashboard/analytics");
 
-        setAnalytics(response.data);
+        if (!cancelled) {
+          setAnalytics(response.data);
+        }
       } catch {
-        setError("Unable to load analytics");
+        if (!cancelled) {
+          setError("Unable to load analytics");
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
 
-    fetchAnalytics();
+    void fetchAnalytics();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   if (loading) {
@@ -117,7 +129,7 @@ function Analytics() {
 
         <div className="analytics-grid">
           <div className="analytics-card">
-            <h2>Applications Over Time</h2>
+            <h2>Applications Added Over Time</h2>
 
             <div className="chart-container">
               <ResponsiveContainer width="100%" height="100%">

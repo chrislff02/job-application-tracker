@@ -34,6 +34,7 @@
 
 .nav-link {
   padding: 9px 14px;
+
   border-radius: 8px;
 
   color: #9ca3af;
@@ -65,7 +66,6 @@
   color: #ffffff;
 
   font-weight: 600;
-  cursor: pointer;
 
   transition: background 0.2s ease;
 }
@@ -83,6 +83,7 @@
   .app-navbar {
     flex-wrap: wrap;
     gap: 16px;
+
     padding: 16px 24px;
   }
 
@@ -92,10 +93,12 @@
 
   .navbar-links {
     order: 3;
+
     width: 100%;
     flex: none;
 
     overflow-x: auto;
+
     padding-bottom: 2px;
 
     scrollbar-width: thin;
@@ -110,8 +113,9 @@
 @media (max-width: 600px) {
   .app-navbar {
     align-items: flex-start;
-    padding: 14px 16px;
     gap: 12px;
+
+    padding: 14px 16px;
   }
 
   .navbar-brand {
@@ -127,6 +131,7 @@
     right: 12px;
 
     padding: 8px 12px;
+
     font-size: 0.85rem;
   }
 

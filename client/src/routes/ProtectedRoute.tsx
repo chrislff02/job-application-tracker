@@ -12,6 +12,8 @@ function isTokenExpired(token: string) {
       return true;
     }
 
+    // JWT payloads use Base64URL encoding, so convert it to
+    // standard Base64 before decoding it in the browser
     const payloadPart = parts[1].replace(/-/g, "+").replace(/_/g, "/");
 
     const paddedPayload = payloadPart.padEnd(
@@ -21,12 +23,15 @@ function isTokenExpired(token: string) {
 
     const payload: TokenPayload = JSON.parse(atob(paddedPayload));
 
+    // Tokens created by this application always include an
+    // expiration time, so a missing exp is treated as invalid
     if (typeof payload.exp !== "number") {
-      return false;
+      return true;
     }
 
     return payload.exp * 1000 <= Date.now();
   } catch {
+    // Malformed tokens should never grant access to protected pages
     return true;
   }
 }

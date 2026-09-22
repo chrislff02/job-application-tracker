@@ -16,3 +16,9 @@ server/dist/
 
 # macOS
 .DS_Store
+
+# AI/tooling metadata
+.agents/
+.claude/
+.windsurf/
+skills-lock.json

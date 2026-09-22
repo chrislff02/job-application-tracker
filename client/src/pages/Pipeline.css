@@ -12,7 +12,6 @@
 }
 
 /* Header */
-
 .pipeline-header {
   display: flex;
   justify-content: space-between;
@@ -23,13 +22,11 @@
 
 .pipeline-header h1 {
   margin: 0;
-
   font-size: 2rem;
 }
 
 .pipeline-header p {
   margin: 6px 0 0;
-
   color: #9ca3af;
 }
 
@@ -44,7 +41,6 @@
 }
 
 /* Pipeline board */
-
 .pipeline-board {
   display: grid;
   grid-template-columns: repeat(9, minmax(260px, 1fr));
@@ -60,7 +56,6 @@
 }
 
 /* Pipeline columns */
-
 .pipeline-column {
   min-height: 500px;
   padding: 14px;
@@ -93,7 +88,6 @@
   margin: 0;
 
   font-size: 1rem;
-
   overflow-wrap: anywhere;
 }
 
@@ -112,7 +106,6 @@
 }
 
 /* Cards */
-
 .pipeline-cards {
   display: flex;
   flex-direction: column;
@@ -155,7 +148,6 @@
   margin: 0 0 6px;
 
   font-size: 1rem;
-
   overflow-wrap: anywhere;
 }
 
@@ -169,8 +161,8 @@
 
 .pipeline-card span {
   color: #9ca3af;
-  font-size: 0.85rem;
 
+  font-size: 0.85rem;
   overflow-wrap: anywhere;
 }
 
@@ -187,7 +179,6 @@
 }
 
 /* Empty columns */
-
 .pipeline-empty {
   margin: 0;
   padding: 18px 8px;
@@ -197,6 +188,7 @@
   text-align: center;
 }
 
+/* Mobile status fallback */
 .pipeline-mobile-status {
   display: none;
 }
@@ -213,7 +205,6 @@
 }
 
 /* Tablet */
-
 @media (max-width: 900px) {
   .pipeline-page {
     padding: 28px 24px;
@@ -234,7 +225,6 @@
 }
 
 /* Mobile */
-
 @media (max-width: 600px) {
   .pipeline-page {
     padding: 20px 16px;
@@ -280,6 +270,7 @@
 
   .pipeline-card {
     padding: 14px;
+    cursor: default;
   }
 
   .pipeline-card h3 {
@@ -298,44 +289,46 @@
     padding: 16px 8px;
   }
 
-  .pipeline-card {
-  cursor: default;
-}
+  .pipeline-mobile-status {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
 
-.pipeline-mobile-status {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+    margin-top: 14px;
+    padding-top: 12px;
 
-  margin-top: 14px;
-  padding-top: 12px;
+    border-top: 1px solid #374151;
+  }
 
-  border-top: 1px solid #374151;
-}
+  .pipeline-mobile-status label {
+    color: #9ca3af;
 
-.pipeline-mobile-status label {
-  color: #9ca3af;
-  font-size: 0.8rem;
-  font-weight: 600;
-}
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
 
-.pipeline-mobile-status select {
-  width: 100%;
-  padding: 9px 10px;
+  .pipeline-mobile-status select {
+    width: 100%;
 
-  border: 1px solid #374151;
-  border-radius: 8px;
+    padding: 9px 10px;
 
-  background: #111827;
-  color: #f9fafb;
-}
+    border: 1px solid #374151;
+    border-radius: 8px;
 
-.pipeline-mobile-status select:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
+    background: #111827;
+    color: #f9fafb;
+  }
 
-.pipeline-mobile-status small {
-  color: #9ca3af;
-}
+  .pipeline-mobile-status select:focus {
+    outline: none;
+    border-color: #60a5fa;
+  }
+
+  .pipeline-mobile-status select:disabled {
+    opacity: 0.6;
+  }
+
+  .pipeline-mobile-status small {
+    color: #9ca3af;
+  }
 }

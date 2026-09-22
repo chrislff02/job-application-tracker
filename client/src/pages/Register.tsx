@@ -1,6 +1,8 @@
+import axios from "axios";
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
+
 import api from "../api/api";
 import "./Auth.css";
 
@@ -17,18 +19,28 @@ function Register() {
     event.preventDefault();
 
     setError("");
+
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters long");
+      return;
+    }
+
     setLoading(true);
 
     try {
       await api.post("/auth/register", {
-        name,
-        email,
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
         password,
       });
 
       navigate("/login");
-    } catch (error: any) {
-      setError(error.response?.data?.message || "Unable to register");
+    } catch (error: unknown) {
+      if (axios.isAxiosError(error)) {
+        setError(error.response?.data?.message || "Unable to register");
+      } else {
+        setError("Unable to register");
+      }
     } finally {
       setLoading(false);
     }
@@ -81,6 +93,7 @@ function Register() {
               onChange={(event) => setPassword(event.target.value)}
               disabled={loading}
               autoComplete="new-password"
+              minLength={8}
               required
             />
           </div>
