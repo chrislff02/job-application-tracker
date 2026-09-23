@@ -14,7 +14,12 @@ dotenv.config();
 const app = express();
 
 const PORT = process.env.PORT || 5001;
-const CLIENT_URL = process.env.CLIENT_URL || "http://localhost:5173";
+
+const CLIENT_URL = process.env.CLIENT_URL;
+
+if (!CLIENT_URL) {
+  throw new Error("CLIENT_URL is not configured");
+}
 
 // Only allow requests from configured frontend origin
 // CLIENT_URL should be set to the deployed frontend URL

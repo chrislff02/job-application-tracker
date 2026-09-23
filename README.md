@@ -75,7 +75,7 @@ Make sure you have installed:
 
 ### Clone the Repository
 
-git clone YOUR_REPOSITORY_URL
+git clone https://github.com/chrislff02/job-application-tracker.git
 
 cd job-application-tracker
 
